@@ -1,0 +1,3598 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conversation Design Tester</title>
+  <style>
+    :root {
+      --bg: #f6f8fc;
+      --panel: #ffffff;
+      --line: #d8e0eb;
+      --text: #11223a;
+      --muted: #61738a;
+      --brand: #0176d3;
+      --brand-2: #0b5cab;
+      --accent: #eaf5ff;
+      --good: #0b8f45;
+      --warn: #a35a00;
+      --bad: #b32020;
+      --radius: 12px;
+      --shadow: 0 8px 20px rgba(17, 34, 58, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Salesforce Sans", "Avenir Next", "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: linear-gradient(180deg, #f8fbff 0%, #f2f5fb 100%);
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 300px 1fr 380px;
+      height: 100vh;
+      gap: 16px;
+      padding: 16px;
+      transition: grid-template-columns 0.2s ease;
+    }
+    .app.left-collapsed {
+      grid-template-columns: 48px 1fr 380px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid #e2e4e8;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .section:last-child { border-bottom: 0; }
+    .left-panel {
+      border: 1px solid #e2e4e8;
+      position: relative;
+      transition: min-width 0.2s ease;
+    }
+    .left-panel.collapsed {
+      min-width: 48px;
+      overflow: visible;
+    }
+    .left-panel.collapsed .sidebar-tree-content {
+      display: none;
+    }
+    .left-panel.collapsed .sidebar-tree {
+      padding: 8px 0;
+      display: flex;
+      justify-content: center;
+    }
+    .left-toggle {
+      position: absolute;
+      right: -14px;
+      top: 24px;
+      width: 24px;
+      height: 40px;
+      border: 1px solid #e2e4e8;
+      border-radius: 0 6px 6px 0;
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: var(--muted);
+      z-index: 10;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .left-toggle:hover {
+      background: #f5f7fa;
+      color: var(--brand);
+    }
+    .left-panel.collapsed .left-toggle {
+      right: -14px;
+      border-radius: 0 6px 6px 0;
+    }
+    .left-panel.collapsed .left-toggle::before {
+      content: "\203A";
+    }
+    .left-toggle::before {
+      content: "\2039";
+    }
+
+    h2, h3 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 2px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button, select, input, textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      border: 1px solid #e2e4e8;
+      border-radius: 8px;
+      background: #fff;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover { border-color: var(--brand); }
+    .primary {
+      background: var(--brand);
+      color: #fff;
+      border-color: var(--brand);
+    }
+    .primary:hover { background: var(--brand-2); }
+
+    .list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+      max-height: 170px;
+      overflow: auto;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      min-height: 40px;
+      cursor: pointer;
+      background: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .item.active {
+      border-color: var(--brand);
+      background: var(--accent);
+    }
+    .item small { color: var(--muted); }
+    .list-empty {
+      padding: 16px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      background: #fafbfd;
+    }
+    .list-empty .empty-cta {
+      margin-top: 8px;
+    }
+
+    .sidebar-tree {
+      background: #f7f8fa;
+      padding: 12px;
+      min-height: 0;
+      overflow: auto;
+    }
+    .sidebar-tree .tree-btn {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      gap: 6px;
+    }
+    .sidebar-tree .tree-btn:hover {
+      background: #eef0f4;
+    }
+    .sidebar-tree .tree-btn.selected {
+      background: #eef0f4;
+    }
+    .sidebar-tree .tree-chevron {
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 10px;
+      transition: transform 0.2s;
+      flex-shrink: 0;
+    }
+    .sidebar-tree .tree-chevron.collapsed {
+      transform: rotate(-90deg);
+    }
+    .sidebar-tree .tree-item {
+      padding-left: 0;
+    }
+    .sidebar-tree .tree-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+    }
+    .sidebar-tree .tree-meta {
+      font-size: 11px;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+    .sidebar-tree .tree-add {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.6;
+    }
+    .sidebar-tree .tree-add:hover {
+      opacity: 1;
+      background: #e2e4e8;
+    }
+    .sidebar-tree .tree-edit {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+    .sidebar-tree .tree-btn:hover .tree-edit,
+    .sidebar-tree .tree-edit:hover {
+      opacity: 1;
+      color: var(--brand);
+    }
+    .sidebar-tree .tree-type-tag {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: #e8eaed;
+      flex-shrink: 0;
+    }
+    .sidebar-tree .tree-new {
+      justify-content: flex-start;
+      color: var(--text);
+    }
+    .sidebar-tree .tree-icon {
+      font-size: 14px;
+      margin-right: 8px;
+      opacity: 0.8;
+    }
+    .sidebar-tree .tree-folder.tree-toggle {
+      cursor: pointer;
+    }
+    .sidebar-tree .tree-connector {
+      width: 16px;
+      font-size: 12px;
+      color: var(--muted);
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-tree .tree-connector.collapsed {
+      transform: rotate(-90deg);
+    }
+    .sidebar-tree .tree-folder {
+      font-size: 14px;
+      margin-right: 6px;
+      opacity: 0.8;
+    }
+    .tree-section-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      padding: 12px 10px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tree-add-section {
+      font-size: 12px !important;
+      width: auto !important;
+      padding: 4px 8px !important;
+      opacity: 1;
+      color: var(--brand);
+    }
+    .tree-add-section:hover {
+      background: #e8eaed;
+    }
+    .tree-section-header .tree-add {
+      font-size: 16px;
+    }
+    .tree-item-project .tree-btn {
+      font-weight: 600;
+      color: var(--text);
+    }
+    .tree-item-project .tree-type-tag {
+      color: var(--text);
+      background: #dce5fc;
+    }
+    .tree-item-nested {
+      padding-left: 16px;
+    }
+    .tree-item-nested-deep {
+      padding-left: 32px;
+    }
+    .tree-item-nested .tree-btn,
+    .tree-item-nested-deep .tree-btn {
+      color: var(--muted);
+    }
+    .tree-item-nested .tree-btn:hover,
+    .tree-item-nested .tree-btn.selected,
+    .tree-item-nested-deep .tree-btn:hover,
+    .tree-item-nested-deep .tree-btn.selected {
+      color: var(--text);
+    }
+    .tree-empty .tree-btn {
+      color: var(--muted);
+    }
+    .tree-empty .tree-add {
+      font-size: 12px;
+      opacity: 1;
+    }
+
+    .main {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 0;
+    }
+
+    .main-header {
+      border-bottom: 1px solid #e2e4e8;
+      padding: 10px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #fff;
+    }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .persona-dims-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #e8eaed;
+      min-height: 88px;
+      flex-shrink: 0;
+    }
+    .center-title {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #181818;
+    }
+    .center-title-text {
+      display: block;
+    }
+    .mode-toggle-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .main-content {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .main-content .chat,
+    .main-content .main-wizard {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .main-content .main-wizard {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      background: #f8f9fa;
+    }
+    .main-content .main-wizard .agent-interview-chat {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+    }
+    .chat {
+      overflow: auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: #f8f9fa;
+    }
+    .chat-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 32px;
+    }
+    .chat-empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .msg {
+      max-width: 78%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      position: relative;
+      animation: messageSlideIn 0.3s ease-out;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: #0176d3;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .msg.assistant {
+      align-self: flex-start;
+      background: #fff;
+      color: #181818;
+      border: 1px solid #e5e5e5;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    @keyframes messageSlideIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg-actions {
+      opacity: 0;
+      transition: opacity 0.15s;
+      margin-top: 6px;
+    }
+    .msg:hover .msg-actions,
+    .msg:focus-within .msg-actions,
+    .msg-actions:focus-within {
+      opacity: 1;
+    }
+
+    .meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+    }
+    .msg.user .meta { color: rgba(255,255,255,0.85); }
+    .meta .meta-time { opacity: 0.7; }
+    .msg:hover .meta-time { opacity: 1; }
+
+    .msg img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .chat-input-bar {
+      flex-shrink: 0;
+      padding: 0.75rem 1.25rem;
+      background: #fff;
+      border-top: 1px solid #e5e5e5;
+      display: flex;
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .input-bar-nudge-section { margin-bottom: 0; }
+    .input-bar-nudge-header {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #181818;
+      margin-bottom: 0.25rem;
+    }
+    .input-bar-nudge-subheader {
+      font-size: 0.5625rem;
+      color: #706e6b;
+      margin-bottom: 0.5rem;
+    }
+    .input-bar-nudges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .input-bar-nudge-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.625rem;
+      border-radius: 100px;
+      border: 1px solid #c9c7c5;
+      background: #fafaf9;
+      color: #181818;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .input-bar-nudge-chip:hover {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
+    .input-bar-nudge-chip .nudge-chip-icon {
+      font-size: 0.75rem;
+      line-height: 1;
+      color: #2e844a;
+    }
+    .persona-nudge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      align-items: center;
+    }
+    .persona-nudges-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+      min-height: 72px;
+    }
+    .persona-nudge-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(100px, 1fr));
+      gap: 0.5rem;
+      width: 100%;
+      min-height: 36px;
+      flex-shrink: 0;
+    }
+    .persona-nudge-grid .persona-nudge-pill {
+      min-width: 80px;
+      min-height: 32px;
+    }
+    .sticky-prompt-bar {
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      border-top: 1px solid #e8eaed;
+      margin-bottom: 0.75rem;
+      min-height: 100px;
+    }
+    .sticky-prompt-bar .persona-nudge-grid {
+      margin-bottom: 0.5rem;
+    }
+    .sticky-prompt-bar .persona-nudge-grid:last-of-type {
+      margin-bottom: 0;
+    }
+    .persona-nudge-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.5rem;
+      border: none;
+      border-bottom: 2px solid #e2e4e8;
+      background: transparent;
+      color: #181818;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .persona-nudge-pill:hover {
+      border-bottom-color: #0176d3;
+      color: #0176d3;
+    }
+    .persona-nudge-pill.open {
+      border-bottom-color: #0176d3;
+      color: #0176d3;
+    }
+    .persona-nudge-pill .pill-label {
+      color: #181818;
+      font-weight: 600;
+    }
+    .persona-nudge-pill .pill-value {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .persona-nudge-pill .pill-caret {
+      font-size: 0.625rem;
+      color: var(--muted);
+    }
+    .persona-dim-select-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+    .persona-dim-label {
+      color: #181818;
+      font-weight: 600;
+      min-width: 72px;
+    }
+    .persona-dim-select {
+      padding: 0.25rem 1.5rem 0.25rem 0.35rem;
+      border: none;
+      border-bottom: 2px solid #e2e4e8;
+      background: transparent;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #181818;
+      cursor: pointer;
+      min-width: 100px;
+      appearance: auto;
+    }
+    .persona-dim-select:hover, .persona-dim-select:focus {
+      border-bottom-color: #0176d3;
+      outline: none;
+    }
+    .persona-dim-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.35rem 0.5rem;
+      border: none;
+      border-bottom: 2px solid #e2e4e8;
+      background: transparent;
+      color: #181818;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .persona-dim-pill:hover {
+      border-bottom-color: #0176d3;
+      color: #0176d3;
+    }
+    .persona-dim-pill.open {
+      border-bottom-color: #0176d3;
+      color: #0176d3;
+    }
+    .persona-dim-pill-caret {
+      font-size: 0.5rem;
+      color: var(--muted);
+    }
+    .persona-nudge-dropdown {
+      display: none;
+      position: fixed;
+      min-width: 260px;
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #e8eaed;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      z-index: 9999;
+    }
+    .persona-dim-pill .persona-nudge-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 2px;
+      min-width: 220px;
+    }
+    .persona-nudge-pill.open .persona-nudge-dropdown,
+    .persona-dim-pill.open .persona-nudge-dropdown {
+      display: block;
+    }
+    .persona-nudge-dropdown-floating {
+      display: block;
+    }
+    .persona-nudge-option {
+      padding: 0.5rem 0.875rem;
+      font-size: 0.8125rem;
+      font-weight: 400;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .persona-nudge-option:last-child { border-bottom: 0; }
+    .persona-nudge-option:hover {
+      background: #f5f7fa;
+    }
+    .persona-nudge-option.selected {
+      background: #f0f7ff;
+      color: #0176d3;
+    }
+    .speaker-selector-wrap {
+      display: flex;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .speaker-pill {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid #c9c7c5;
+      background: #fafaf9;
+      color: #181818;
+      cursor: pointer;
+    }
+    .speaker-pill:hover {
+      background: #eef4ff;
+      border-color: #0176d3;
+    }
+    .speaker-pill.active {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
+    .chat-input-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      border: 1px solid #e5e5e5;
+      border-radius: 24px;
+      padding: 0.375rem 0.5rem 0.375rem 1rem;
+      background: #fafaf9;
+    }
+    .chat-input-row:focus-within {
+      border-color: #0176d3;
+      background: #fff;
+    }
+    .chat-input-field {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.875rem;
+      padding: 0.5rem 0;
+      outline: none;
+      font-family: inherit;
+    }
+    .chat-send-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 50%;
+      background: #0176d3;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .chat-send-btn:hover {
+      background: #014a8f;
+    }
+    .conversation-nudges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid #f0f0f0;
+    }
+    .conversation-nudge-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 100px;
+      border: 1px solid #c9c7c5;
+      background: #fff;
+      color: #181818;
+      font-size: 0.6875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .conversation-nudge-chip:hover {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
+    .composer {
+      border-top: 1px solid #e2e4e8;
+      background: #fff;
+      padding: 16px 24px;
+    }
+    .composer-inner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      border: 1px solid #e2e4e8;
+      border-radius: 14px;
+      padding: 8px 12px;
+      background: #fafbfc;
+    }
+    .composer.dragover .composer-inner {
+      border-color: var(--brand);
+      background: #f5f9ff;
+    }
+    .composer-plus {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .composer-plus:hover {
+      background: #e2e4e8;
+      color: var(--text);
+    }
+    .composer-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+    }
+    .composer textarea {
+      width: 100%;
+      min-height: 44px;
+      border: none;
+      border-radius: 0;
+      resize: none;
+      padding: 10px 0;
+      background: transparent;
+      font-size: 14px;
+    }
+    .composer textarea:focus { outline: none; }
+    .composer-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .composer-options .field {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .composer-options .field label {
+      white-space: nowrap;
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .composer-options select {
+      height: 36px;
+      min-width: 100px;
+      padding: 0 8px;
+      border: 1px solid #e2e4e8;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 13px;
+    }
+    .composer-send {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+    }
+    .composer-send:hover {
+      background: var(--brand-2);
+    }
+    .composer-secondary {
+      margin-top: 8px;
+      font-size: 12px;
+    }
+    .composer-secondary a, .composer-secondary button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 0;
+      font: inherit;
+    }
+    .composer-secondary a:hover, .composer-secondary button:hover {
+      color: var(--brand);
+    }
+    .composer-attach {
+      display: none;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
+    .composer-attach.visible {
+      display: flex;
+    }
+    .composer-attach input[type="text"] {
+      flex: 1;
+      min-width: 120px;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid #e2e4e8;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .side {
+      overflow: hidden;
+      border-left: 1px solid #e2e4e8;
+      display: flex;
+      flex-direction: column;
+    }
+    .right-panel-tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e4e8;
+      flex-shrink: 0;
+    }
+    .right-tab {
+      flex: 1;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 0;
+      background: #f5f7fa;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .right-tab:hover {
+      background: #eef0f4;
+      color: var(--text);
+    }
+    .right-tab.active {
+      background: #fff;
+      color: var(--brand);
+      border-bottom: 2px solid var(--brand);
+    }
+    .right-tab-panel {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      flex-direction: column;
+    }
+    .right-tab-panel.active {
+      display: flex;
+    }
+    .sample-conv-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding: 12px 16px;
+      border-bottom: 1px solid #e2e4e8;
+    }
+    .sample-conv-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px 20px;
+      color: var(--muted);
+    }
+    .sample-conv-empty-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+    .sample-conv-empty-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #181818;
+      margin-bottom: 6px;
+    }
+    .sample-conv-empty-text {
+      font-size: 0.8125rem;
+      line-height: 1.5;
+      max-width: 260px;
+    }
+    .sample-conversation {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8f9fa;
+    }
+    .sample-conversation .sample-msg {
+      max-width: 90%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .sample-conversation .sample-msg.user {
+      align-self: flex-end;
+      background: #0176d3;
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+    .sample-conversation .sample-msg.assistant {
+      align-self: flex-start;
+      background: #fff;
+      color: #181818;
+      border: 1px solid #e5e5e5;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .side .collapsible-header {
+      padding: 10px 16px;
+    }
+    .side button {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .field input, .field textarea, .field select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 7px;
+      background: #fff;
+    }
+    .field textarea { min-height: 54px; }
+
+    .score {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .pill { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+    .ok { background: #e4f6ea; color: var(--good); }
+    .warn { background: #fff2e3; color: var(--warn); }
+    .bad { background: #fde8e8; color: var(--bad); }
+
+    dialog {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      width: min(1200px, 95vw);
+      height: min(800px, 90vh);
+      padding: 0;
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.35); }
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      height: 100%;
+    }
+    .compare-pane {
+      border-right: 1px solid var(--line);
+      padding: 10px;
+      overflow: auto;
+      background: #fff;
+    }
+    .compare-pane:last-child { border-right: 0; }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .agent-interview {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+    }
+    .agent-interview-chat {
+      padding: 24px;
+      overflow: auto;
+      background: #f8f9fa;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      flex: 1;
+      min-height: 0;
+    }
+    .agent-interview-controls {
+      padding: 12px 16px;
+      border-top: 1px solid #e5e5e5;
+      background: #fff;
+      display: grid;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .wizard-input-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      border: 1px solid #e5e5e5;
+      border-radius: 24px;
+      padding: 0.375rem 0.5rem 0.375rem 1rem;
+      background: #fafaf9;
+    }
+    .wizard-input-row:focus-within {
+      border-color: #0176d3;
+      background: #fff;
+    }
+    .option-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .chip.active {
+      border-color: var(--brand);
+      background: var(--accent);
+    }
+    .question-nudge-chip {
+      border: 1px solid #c9c7c5;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: #fafaf9;
+      color: #181818;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      white-space: normal;
+      word-wrap: break-word;
+      min-width: 140px;
+      max-width: 280px;
+    }
+    .question-nudge-chip:hover {
+      border-color: #0176d3;
+      background: #eef4ff;
+      color: #0176d3;
+    }
+    .agent-use-case-section {
+      margin-bottom: 0.75rem;
+    }
+    .agent-use-case-header {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      color: #181818;
+      margin-bottom: 0.5rem;
+    }
+    .agent-use-case-topic {
+      margin-bottom: 0.5rem;
+    }
+    .agent-use-case-topic-header {
+      font-size: 0.625rem;
+      font-weight: 700;
+      color: #706e6b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.35rem;
+    }
+    .agent-use-case-bubbles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: flex-start;
+    }
+    .agent-use-case-topic .agent-use-case-bubbles {
+      margin-bottom: 0.5rem;
+    }
+    .agent-use-case-bubble {
+      border: 1px solid #c9c7c5;
+      border-radius: 100px;
+      padding: 0.5rem 0.875rem;
+      background: #fafaf9;
+      color: #181818;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: normal;
+      word-wrap: break-word;
+      text-align: left;
+      min-width: 140px;
+    }
+    .agent-use-case-bubble:hover {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
+    .agent-use-case-bubble.selected {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
+    .agent-use-case-continue {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 8px;
+      background: #0176d3;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .agent-use-case-continue:hover {
+      background: #014a8f;
+    }
+    .agent-use-case-input-bubble {
+      border: 1px dashed #c9c7c5;
+      border-radius: 100px;
+      padding: 0.5rem 0.875rem;
+      background: #fff;
+      font-size: 0.8125rem;
+      color: #706e6b;
+      min-width: 180px;
+      flex: 1;
+      max-width: 280px;
+    }
+    .agent-use-case-input-bubble::placeholder {
+      color: #706e6b;
+    }
+    .agent-use-case-input-bubble:focus {
+      outline: none;
+      border-color: #0176d3;
+      color: #181818;
+    }
+    .question-nudge-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #706e6b;
+      margin-bottom: 6px;
+      width: 100%;
+    }
+    .question-nudges-in-chat {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .voice-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .voice-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+    }
+    .voice-card.active {
+      border-color: var(--brand);
+      background: var(--accent);
+    }
+    .voice-card h4 {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+    }
+    .voice-card p {
+      margin: 4px 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .voice-playground {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      background: #f9fcff;
+      display: grid;
+      gap: 6px;
+    }
+    .voice-playground .row {
+      display: grid;
+      grid-template-columns: 1fr 180px;
+      gap: 6px;
+    }
+    .tone-gallery {
+      display: grid;
+      gap: 8px;
+      width: 100%;
+    }
+    .tone-row {
+      display: grid;
+      grid-template-columns: 220px 1fr 1fr 1fr;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .tone-row-single {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .tone-meta {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #0f1a2a;
+      color: #e7edf7;
+      padding: 8px;
+      font-size: 12px;
+    }
+    .tone-meta b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 13px;
+      color: #fff;
+    }
+    .tone-cell {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      font-size: 12px;
+    }
+    .tone-cell .k {
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .tone-cell.active {
+      border-color: var(--brand);
+      background: var(--accent);
+    }
+    .mode-toggle {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .mode-btn {
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 0;
+      padding: 7px 10px;
+      background: #fff;
+      color: var(--muted);
+    }
+    .mode-btn:last-child {
+      border-right: 0;
+    }
+    .mode-btn.active {
+      background: var(--accent);
+      color: var(--brand-2);
+      font-weight: 600;
+    }
+    .mode-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+
+    /* Collapsible sections */
+    .collapsible {
+      border-bottom: 1px solid var(--line);
+    }
+    .collapsible:last-child { border-bottom: 0; }
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      cursor: pointer;
+      user-select: none;
+      background: #fff;
+      transition: background 0.15s;
+    }
+    .collapsible-header:hover {
+      background: #fafbfd;
+    }
+    .collapsible-header h2 {
+      margin: 0;
+      flex: 1;
+    }
+    .collapsible-toggle {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 12px;
+      transition: transform 0.2s;
+    }
+    .collapsible.collapsed .collapsible-toggle {
+      transform: rotate(-90deg);
+    }
+    .collapsible-body {
+      padding: 0 16px 16px;
+      overflow: hidden;
+    }
+    .collapsible-body .field { margin-top: 10px; }
+    .collapsible.collapsed .collapsible-body {
+      display: none;
+    }
+    .collapsible-summary {
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 16px 12px;
+      display: none;
+    }
+    .collapsible.collapsed .collapsible-summary {
+      display: block;
+    }
+    .persona-group {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .persona-group:first-child {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
+    .persona-group h3 {
+      margin: 0 0 8px 0;
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+    #personaMatrixContainer .matrix-table {
+      max-height: 280px;
+      overflow: auto;
+    }
+    #personaMatrixContainer .matrix-row {
+      display: grid;
+      grid-template-columns: 140px 80px 90px 1fr;
+      gap: 8px;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+      font-size: 12px;
+    }
+    #personaMatrixContainer .matrix-row:last-child { border-bottom: 0; }
+    #personaMatrixContainer .matrix-row:hover { background: #fafbfd; }
+    #personaMatrixContainer .matrix-header {
+      font-weight: 600;
+      color: var(--muted);
+      background: #f5f8fd;
+    }
+    .matrix-response { word-break: break-word; }
+    .matrix-wordcount {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel left-panel" id="leftPanel">
+      <button type="button" class="left-toggle" id="leftToggle" title="Collapse sidebar"> </button>
+      <div class="sidebar-tree">
+        <div class="sidebar-tree-content">
+        <div class="tree-section-header">
+          <span>Projects</span>
+          <button id="addProject" class="tree-add tree-add-section" title="New project">+ New project</button>
+        </div>
+        <button id="addAgent" style="display:none;"></button>
+        <button id="addScenario" style="display:none;"></button>
+        <button id="renameProject" style="display:none;"></button>
+        <button id="renameAgent" style="display:none;"></button>
+        <button id="duplicateScenario" style="display:none;"></button>
+        <button id="compareScenarios" style="display:none;"></button>
+        <button id="generateTests" style="display:none;"></button>
+        <div id="sidebarTree"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="panel main">
+      <header class="main-header">
+        <div class="header-row">
+          <div id="breadcrumb" class="center-title"></div>
+          <div class="mode-toggle-wrap">
+            <div class="mode-toggle" id="designModeToggle">
+              <button id="designModeWizardBtn" class="mode-btn active" type="button">Build Persona</button>
+              <button id="designModeBacksolveBtn" class="mode-btn" type="button">Design from scratch</button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section id="mainContent" class="main-content">
+        <section id="chat" class="chat"></section>
+        <div id="mainWizard" class="main-wizard agent-interview">
+          <div id="agentInterviewChat" class="agent-interview-chat"></div>
+          <div class="agent-interview-controls">
+            <div id="interviewOptions" class="option-chips"></div>
+            <div id="voicePlayground" class="voice-playground" style="display:none;">
+              <div class="subtle">Try a sentence across different voices and situations.</div>
+              <div class="row">
+                <input id="voicePlaygroundSentence" placeholder="Example sentence to preview" />
+                <select id="voicePlaygroundSituation">
+                  <option value="normal">Normal</option>
+                  <option value="product_info">Product Info</option>
+                  <option value="escalation">Escalation</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:none;">
+              <button id="interviewBack">Back</button>
+              <button id="interviewNext">Next</button>
+              <button id="interviewCreate">Create Agent</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="chat-input-bar" id="composerEl">
+        <div class="sticky-prompt-bar" style="margin-bottom:0;">
+          <div class="input-bar-nudge-header" style="margin-bottom:0.5rem; font-size:0.75rem;">Persona dimensions — select traits to shape your agent</div>
+          <div id="personaNudgesComposer" class="persona-nudges-container" data-persona-nudges="true">
+            <div class="persona-nudge-grid persona-nudge-grid-row1">
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Identity</span><select class="persona-dim-select" data-dim="identity"><option>direct, resourceful, no-nonsense</option><option>patient, curious, supportive</option></select></label>
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Register</span><select class="persona-dim-select" data-dim="register"><option>Peer</option><option selected>Trusted Advisor</option></select></label>
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Voice</span><select class="persona-dim-select" data-dim="voice"><option>Terse</option><option>Conversational</option></select></label>
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Interaction</span><select class="persona-dim-select" data-dim="interaction"><option>Proactive</option><option>Reactive</option><option selected>Collaborative</option></select></label>
+            </div>
+            <div class="persona-nudge-grid persona-nudge-grid-row2">
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Tone</span><select class="persona-dim-select" data-dim="tone"><option>Matter-of-fact</option><option>Encouraging</option></select></label>
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Style</span><select class="persona-dim-select" data-dim="style"><option>Compact</option><option>Narrative</option></select></label>
+              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Guardrails</span><select class="persona-dim-select" data-dim="guardrails"><option>Human-in-the-loop</option><option>Be factual</option></select></label>
+            </div>
+          </div>
+        </div>
+        <div id="composerInputRow" class="chat-input-row">
+          <div id="speakerSelectorWrap" class="speaker-selector-wrap" style="display:none;">
+            <button type="button" class="speaker-pill" data-role="user">User</button>
+            <button type="button" class="speaker-pill" data-role="assistant">Agent</button>
+          </div>
+          <input type="text" id="messageInput" class="chat-input-field" placeholder="Type your message..." />
+          <button id="sendBtn" class="chat-send-btn" title="Send">&#9650;</button>
+        </div>
+      </footer>
+      <div style="display:none;">
+        <select id="speakerSelect"><option value="user">User</option><option value="assistant">Assistant</option></select>
+        <select id="situationSelect"><option value="auto">Auto</option><option value="normal">Normal</option><option value="product_info">Product Info</option><option value="escalation">Escalation</option></select>
+        <select id="assistantAgentSelect"></select>
+        <input type="text" id="imageUrlInput" />
+        <input type="file" id="fileInput" accept="image/*" />
+        <button id="saveMajorVersion"></button>
+        <button id="undoToLastVersion"></button>
+        <button id="exportBtn"></button>
+        <button id="simulateBtn"></button>
+        <select id="modeSelect"><option value="manual">Manual</option><option value="api">API</option></select>
+      </div>
+    </main>
+
+    <aside class="panel side">
+      <div class="right-panel-tabs">
+        <button type="button" class="right-tab active" data-tab="sample">Sample Conversation</button>
+        <button type="button" class="right-tab" data-tab="settings">Settings</button>
+      </div>
+      <div id="rightSampleConversation" class="right-tab-panel active">
+        <div class="sample-conv-header">Live preview</div>
+        <div id="sampleConversation" class="sample-conversation"></div>
+      </div>
+      <div id="rightSettings" class="right-tab-panel">
+      <div id="personaMatrixSection" class="collapsible" data-collapsible-default="expanded">
+        <div class="collapsible-header" data-toggle="personaMatrixCollapsible">
+          <h2>Persona Response Matrix</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="field">
+            <label>Utterance</label>
+            <input id="matrixUtterance" placeholder="Example: Can you summarize this and save it?" />
+          </div>
+          <div id="matrixExampleChips" class="toolbar" style="margin-top:6px;"></div>
+          <div class="field" style="margin-top:8px;">
+            <label>Situation</label>
+            <select id="matrixSituation">
+              <option value="normal">Normal</option>
+              <option value="product_info">Product Info</option>
+              <option value="escalation">Escalation</option>
+            </select>
+          </div>
+          <div class="toolbar">
+            <button id="refreshPersonaMatrix">Refresh Matrix</button>
+          </div>
+          <div id="personaMatrixContainer" class="subtle" style="margin-top:8px;">Persona matrix will appear here.</div>
+        </div>
+      </div>
+
+      <div id="manualBacksolvePanel" class="collapsible" data-collapsible-default="expanded" style="display:none;">
+        <div class="collapsible-header" data-toggle="backsolveCollapsible">
+          <h2>Design from scratch</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="field">
+            <label>Describe what you want</label>
+            <textarea id="manualIntentInput" placeholder="Example: Draft a call example conversation for a frustrated customer asking about pricing changes."></textarea>
+          </div>
+          <div class="toolbar">
+            <button id="generateFromIntent" class="primary">Draft Conversation</button>
+            <button id="backsolveFromCurrent">Infer Persona from Conversation</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="agentPersonaSection" class="collapsible collapsed" data-collapsible-default="collapsed">
+        <div class="collapsible-header" data-toggle="agentPersonaCollapsible">
+          <h2>Agent Persona</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-summary" id="agentPersonaSummary">No agent selected.</div>
+        <div class="collapsible-body">
+          <div class="persona-group">
+            <h3>Core</h3>
+            <div class="field"><label>Name</label><input id="agentName" /></div>
+            <div class="field"><label>What Agent Does</label><textarea id="agentPurpose" placeholder="Core job-to-be-done for this agent"></textarea></div>
+            <div class="field"><label>Identity (3-5 traits)</label><input id="agentIdentity" placeholder="direct, resourceful, no-nonsense" /></div>
+          </div>
+          <div class="persona-group">
+            <h3>Voice & Tone</h3>
+            <div class="field"><label>Register (relationship + formality)</label>
+              <select id="agentRegister">
+                <option>Peer</option>
+                <option selected>Trusted Advisor</option>
+                <option>Subordinate</option>
+                <option>Coach</option>
+              </select>
+            </div>
+            <div class="field"><label>Voice (durable verbal identity)</label><input id="agentVoice" placeholder="Terse and clear, no fluff, plain language" /></div>
+            <div class="field"><label>Tone Baseline</label><input id="agentTone" placeholder="Matter-of-fact, encouraging, calm..." /></div>
+            <div class="field"><label>Tone: Normal</label><input id="agentNormalTone" placeholder="Used for regular conversation" /></div>
+            <div class="field"><label>Tone: Product Info</label><input id="agentProductTone" placeholder="Used for product feature/explainer prompts" /></div>
+            <div class="field"><label>Tone: Escalation</label><input id="agentEscalationTone" placeholder="Used for sensitive/frustrated moments" /></div>
+          </div>
+          <div class="persona-group">
+            <h3>Behavior</h3>
+            <div class="field"><label>Style (structure + visual UX)</label><textarea id="agentStyle" placeholder="How responses are formatted and organized"></textarea></div>
+            <div class="field"><label>Interaction Model</label>
+              <select id="agentInteractionModel">
+                <option selected>Proactive</option>
+                <option>Reactive</option>
+                <option>Collaborative</option>
+              </select>
+            </div>
+          </div>
+          <div class="persona-group">
+            <h3>Constraints</h3>
+            <div class="field"><label>Guardrails</label><textarea id="agentGuardrails"></textarea></div>
+            <div class="field"><label>Banned Phrases</label><textarea id="agentBanned" placeholder="comma-separated"></textarea></div>
+          </div>
+          <div class="toolbar">
+            <button id="inferPersona">Infer From Conversation</button>
+            <button id="savePersona" class="primary">Save Persona</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="scoringSection" class="collapsible collapsed" data-collapsible-default="collapsed">
+        <div class="collapsible-header" data-toggle="scoringCollapsible">
+          <h2>Scoring</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-body">
+          <div id="scorePanel"></div>
+        </div>
+      </div>
+
+      <div id="apiSection" class="collapsible collapsed" data-collapsible-default="collapsed">
+        <div class="collapsible-header" data-toggle="apiCollapsible">
+          <h2>API Settings</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="field"><label>Endpoint</label><input id="apiEndpoint" placeholder="https://api.openai.com/v1/chat/completions" /></div>
+          <div class="field"><label>API Key</label><input id="apiKey" type="password" placeholder="Stored locally" /></div>
+          <div class="field"><label>Model</label><input id="apiModel" placeholder="gpt-4.1-mini" /></div>
+          <div class="toolbar"><button id="saveApiSettings">Save API Settings</button></div>
+        </div>
+      </div>
+
+      <div id="testCasesSection" class="collapsible collapsed" data-collapsible-default="collapsed">
+        <div class="collapsible-header" data-toggle="testCasesCollapsible">
+          <h2>Generated Test Cases</h2>
+          <span class="collapsible-toggle">&#9660;</span>
+        </div>
+        <div class="collapsible-body">
+          <div id="testCasePanel" class="subtle">No test cases yet.</div>
+        </div>
+      </div>
+      </div>
+    </aside>
+  </div>
+
+  <dialog id="compareDialog">
+    <div class="section" style="display:flex;justify-content:space-between;align-items:center;">
+      <h2>Scenario Comparison</h2>
+      <div class="toolbar">
+        <select id="compareLeft"></select>
+        <select id="compareRight"></select>
+        <button id="refreshCompare">Refresh</button>
+        <button id="closeCompare">Close</button>
+      </div>
+    </div>
+    <div class="compare">
+      <div id="comparePaneLeft" class="compare-pane"></div>
+      <div id="comparePaneRight" class="compare-pane"></div>
+    </div>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = "cdt_state_v2";
+
+    const state = loadState();
+
+    const el = {
+      sidebarTree: document.getElementById("sidebarTree"),
+      projectList: document.getElementById("projectList"),
+      scenarioList: document.getElementById("scenarioList"),
+      agentList: document.getElementById("agentList"),
+      breadcrumb: document.getElementById("breadcrumb"),
+      scenarioVersionMeta: document.getElementById("scenarioVersionMeta"),
+      designModeDesc: document.getElementById("designModeDesc"),
+      headerActions: document.getElementById("headerActions"),
+      designModeWizardBtn: document.getElementById("designModeWizardBtn"),
+      designModeBacksolveBtn: document.getElementById("designModeBacksolveBtn"),
+      chat: document.getElementById("chat"),
+      speakerSelect: document.getElementById("speakerSelect"),
+      speakerSelectorWrap: document.getElementById("speakerSelectorWrap"),
+      situationSelect: document.getElementById("situationSelect"),
+      assistantAgentSelect: document.getElementById("assistantAgentSelect"),
+      messageInput: document.getElementById("messageInput"),
+      simulateBtn: document.getElementById("simulateBtn"),
+      fileInput: document.getElementById("fileInput"),
+      imageUrlInput: document.getElementById("imageUrlInput"),
+      composerEl: document.getElementById("composerEl"),
+      attachImageBtn: document.getElementById("attachImageBtn"),
+      composerAttach: document.getElementById("composerAttach"),
+      modeSelect: document.getElementById("modeSelect"),
+      scorePanel: document.getElementById("scorePanel"),
+      testCasePanel: document.getElementById("testCasePanel"),
+      agentName: document.getElementById("agentName"),
+      agentPurpose: document.getElementById("agentPurpose"),
+      agentIdentity: document.getElementById("agentIdentity"),
+      agentRegister: document.getElementById("agentRegister"),
+      agentVoice: document.getElementById("agentVoice"),
+      agentTone: document.getElementById("agentTone"),
+      agentStyle: document.getElementById("agentStyle"),
+      agentInteractionModel: document.getElementById("agentInteractionModel"),
+      agentGuardrails: document.getElementById("agentGuardrails"),
+      agentBanned: document.getElementById("agentBanned"),
+      agentNormalTone: document.getElementById("agentNormalTone"),
+      agentProductTone: document.getElementById("agentProductTone"),
+      agentEscalationTone: document.getElementById("agentEscalationTone"),
+      apiEndpoint: document.getElementById("apiEndpoint"),
+      apiKey: document.getElementById("apiKey"),
+      apiModel: document.getElementById("apiModel"),
+      compareDialog: document.getElementById("compareDialog"),
+      compareLeft: document.getElementById("compareLeft"),
+      compareRight: document.getElementById("compareRight"),
+      comparePaneLeft: document.getElementById("comparePaneLeft"),
+      comparePaneRight: document.getElementById("comparePaneRight"),
+      mainWizard: document.getElementById("mainWizard"),
+      agentInterviewChat: document.getElementById("agentInterviewChat"),
+      interviewOptions: document.getElementById("interviewOptions"),
+      voicePlayground: document.getElementById("voicePlayground"),
+      voicePlaygroundSentence: document.getElementById("voicePlaygroundSentence"),
+      voicePlaygroundSituation: document.getElementById("voicePlaygroundSituation"),
+      composerInputRow: document.getElementById("composerInputRow"),
+      interviewBack: document.getElementById("interviewBack"),
+      interviewNext: document.getElementById("interviewNext"),
+      interviewCreate: document.getElementById("interviewCreate"),
+      personaMatrixSection: document.getElementById("personaMatrixSection"),
+      matrixExampleChips: document.getElementById("matrixExampleChips"),
+      matrixUtterance: document.getElementById("matrixUtterance"),
+      matrixSituation: document.getElementById("matrixSituation"),
+      refreshPersonaMatrix: document.getElementById("refreshPersonaMatrix"),
+      personaMatrixContainer: document.getElementById("personaMatrixContainer"),
+      manualBacksolvePanel: document.getElementById("manualBacksolvePanel"),
+      manualIntentInput: document.getElementById("manualIntentInput"),
+      generateFromIntent: document.getElementById("generateFromIntent"),
+      backsolveFromCurrent: document.getElementById("backsolveFromCurrent"),
+      agentPersonaSummary: document.getElementById("agentPersonaSummary")
+    };
+
+    const personaArchetypes = [
+      { name: "Direct Operator", identity: "direct, resourceful, no-nonsense", register: "Peer", voice: "terse", tone: "matter-of-fact", style: "short action list", interaction: "Proactive" },
+      { name: "Patient Coach", identity: "patient, curious, supportive", register: "Coach", voice: "warm conversational", tone: "encouraging", style: "guided steps with context", interaction: "Collaborative" },
+      { name: "Trusted Advisor", identity: "calm, strategic, pragmatic", register: "Trusted Advisor", voice: "clear professional", tone: "balanced", style: "recommendation then rationale", interaction: "Proactive" },
+      { name: "Formal Assistant", identity: "precise, deferential, compliant", register: "Subordinate", voice: "formal", tone: "neutral", style: "fully explicit requests", interaction: "Reactive" }
+    ];
+
+    const toneOptions = [
+      { label: "Warm Coach", note: "Supportive and encouraging.", realLife: "Brene Brown interview style; patient tutor chats." },
+      { label: "Trusted Advisor", note: "Strategic and balanced.", realLife: "Executive keynote Q&A; professional AI assistant style." },
+      { label: "Direct Operator", note: "Efficient and tactical.", realLife: "Incident commander updates; runbook-driven support." },
+      { label: "Executive Brief", note: "Top-line and high signal.", realLife: "Board memo summaries; leadership one-pagers." },
+      { label: "Custom", note: "Define your own voice.", realLife: "Blend the traits you want." }
+    ];
+
+    const registerOptions = [
+      { label: "Peer", note: "Equal footing, concise asks.", example: "I'd go with option A. Want me to draft it?" },
+      { label: "Trusted Advisor", note: "Guiding and strategic.", example: "I recommend option A because it fits your goal. Shall we proceed?" },
+      { label: "Subordinate", note: "Defers and asks for permission.", example: "Would you like me to draft option A for your review?" },
+      { label: "Coach", note: "Supportive and developmental.", example: "Let's try option A together. I'll walk you through it." }
+    ];
+    const styleOptions = [
+      { label: "Compact: emoji + bullets", note: "Dense and scannable.", example: "✓ Point 1 ✓ Point 2 ✓ Point 3 — Next: review and confirm." },
+      { label: "Narrative: headlines + detail", note: "Full context first.", example: "Here's the full picture: [headline] … [detail] …" },
+      { label: "Summary first, then bullets", note: "Bottom line up front.", example: "Bottom line: X. Details: • A • B • C" },
+      { label: "Fully explicit, step-by-step", note: "No assumptions.", example: "Step 1: Do X. Step 2: Then Y. Step 3: Confirm Z." }
+    ];
+    const interactionOptions = [
+      { label: "Proactive", note: "Acts first then confirms.", example: "I've updated the draft. Review when ready." },
+      { label: "Reactive", note: "Waits for explicit direction.", example: "What would you like me to do next?" },
+      { label: "Collaborative", note: "Alternates proposal and confirmation.", example: "I suggest we do X. Does that work for you?" }
+    ];
+    const interviewFlow = [
+      { id: "purpose", prompt: "What does your agent do? Describe it in one clear sentence—this helps tailor the examples you'll see.", type: "text", placeholder: "or describe your agent persona in your own words", nudges: ["Helps employees with CRM updates and record management.", "Meeting summaries and updates.", "Case creation and updates.", "Policy and knowledge lookups.", "Case deflection and self-service.", "Pipeline management across channels.", "Order status, returns, and product recommendations."] },
+      { id: "identity", prompt: "What 3–5 traits should define this agent's personality? For example: direct and resourceful, or patient and curious.", type: "text", placeholder: "Example: direct, resourceful, no-nonsense", nudges: ["direct, resourceful, no-nonsense", "patient, curious, supportive", "calm, strategic, pragmatic", "precise, deferential, compliant"] },
+      { id: "register", prompt: "How should the agent relate to the user? As a peer, trusted advisor, subordinate, or coach?", type: "options", options: registerOptions },
+      {
+        id: "voice",
+        prompt: "Voice stays consistent across situations; tone can shift. Which voice fits best?",
+        type: "options",
+        options: toneOptions
+      },
+      { id: "voiceCustom", prompt: "If you chose Custom voice, describe it. Otherwise skip.", type: "text", placeholder: "Example: crisp, optimistic, and plain language", optional: true, nudges: ["crisp, optimistic, plain language", "warm but concise", "formal and precise"] },
+      { id: "toneBase", prompt: "How should the agent generally come across? Describe the baseline tone.", type: "text", placeholder: "Example: matter-of-fact and calm", nudges: ["matter-of-fact and calm", "encouraging and supportive", "neutral and professional", "warm and approachable"] },
+      { id: "normalTone", prompt: "Tone for normal conversation—pick the one that fits best.", type: "options", options: toneOptions.filter(o => o.label !== "Custom") },
+      { id: "productTone", prompt: "Tone when explaining product info or features.", type: "options", options: toneOptions.filter(o => o.label !== "Custom") },
+      { id: "escalationTone", prompt: "Tone when things get tense or escalate.", type: "options", options: toneOptions.filter(o => o.label !== "Custom") },
+      { id: "style", prompt: "How should content be structured and formatted? Pick the style that matches how you want responses to look.", type: "options", options: styleOptions },
+      { id: "interactionModel", prompt: "How should the agent collaborate with the user?", type: "options", options: interactionOptions },
+      { id: "guardrails", prompt: "What must the agent avoid or always include? Think about legal, factual, or safety constraints.", type: "text", placeholder: "Example: Always clarify assumptions. Never give legal advice.", nudges: ["Always clarify assumptions. Never give legal advice.", "Human-in-the-loop: confirm before writes.", "Be factual, avoid legal advice.", "Never share PII."] },
+      { id: "bannedPhrases", prompt: "Any phrases the agent should never use? (optional, comma-separated)", type: "text", placeholder: "Example: just trust me, guaranteed outcome", optional: true, nudges: ["just trust me, guaranteed outcome", "100% certain", "I promise"] }
+    ];
+    const interviewState = { step: 0, answers: {}, transcript: [], previewSentence: "", previewSituation: "normal" };
+
+    bindEvents();
+    renderAll();
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw);
+          normalizeState(parsed);
+          return parsed;
+        } catch (_) {}
+      }
+      const seed = {
+        api: { endpoint: "", key: "", model: "gpt-4.1-mini" },
+        selected: { projectId: "p1", scenarioId: "s1", agentId: "a1", designMode: "wizard" },
+        expandedProjects: ["p1"],
+        expandedAgents: ["a1"],
+        projects: [{ id: "p1", name: "Default Project" }],
+        agents: [{ id: "a1", projectId: "p1", name: "Sales Coach", purpose: "Helps sales reps draft customer-ready responses.", identity: "direct, resourceful, supportive", register: "Trusted Advisor", voice: "Clear, concise, plain language", tone: "Matter-of-fact and encouraging", style: "Summary first, then bullets with next step", interactionModel: "Collaborative", guardrails: "Be factual and avoid legal advice.", bannedPhrases: "", toneBySituation: { normal: "Trusted Advisor", product_info: "Executive Brief", escalation: "Warm Coach" } }],
+        scenarios: [{
+          id: "s1", projectId: "p1", agentId: "a1", name: "Onboarding Script", mode: "manual",
+          messages: [
+            { id: uid(), role: "user", text: "Can you help me draft a welcome email?", image: "", agentId: null, ts: Date.now() - 60000 },
+            { id: uid(), role: "assistant", text: "Absolutely. Tell me your customer segment and tone preference.", image: "", agentId: "a1", ts: Date.now() - 40000 }
+          ],
+          versions: []
+        }]
+      };
+      normalizeState(seed);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+      return seed;
+    }
+
+    function normalizeState(s) {
+      if (!s.selected) s.selected = {};
+      if (!s.selected.designMode) s.selected.designMode = "wizard";
+      if (!s.expandedProjects) s.expandedProjects = [];
+      if (!s.expandedAgents) s.expandedAgents = [];
+      (s.scenarios || []).forEach(sc => {
+        if (sc.agentIds && !sc.agentId) {
+          sc.agentId = sc.agentIds[0] || "";
+          delete sc.agentIds;
+        }
+        if (!sc.agentId && sc.projectId) {
+          const agents = (s.agents || []).filter(a => a.projectId === sc.projectId);
+          sc.agentId = agents[0]?.id || "";
+        }
+      });
+      (s.agents || []).forEach(a => {
+        if (!a.purpose) a.purpose = "";
+        if (!a.identity) a.identity = "";
+        if (!a.register) a.register = "Trusted Advisor";
+        if (!a.voice) a.voice = "";
+        if (!a.tone) a.tone = "Trusted Advisor";
+        if (!a.style) a.style = "";
+        if (!a.interactionModel) a.interactionModel = "Collaborative";
+        if (!a.toneBySituation) {
+          a.toneBySituation = a.voiceBySituation || { normal: a.tone, product_info: a.tone, escalation: "Warm Coach" };
+        }
+        if (!a.toneBySituation) {
+          a.toneBySituation = { normal: a.tone, product_info: a.tone, escalation: "Warm Coach" };
+        } else {
+          a.toneBySituation.normal = a.toneBySituation.normal || a.tone;
+          a.toneBySituation.product_info = a.toneBySituation.product_info || a.tone;
+          a.toneBySituation.escalation = a.toneBySituation.escalation || "Warm Coach";
+        }
+      });
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function uid() {
+      return Math.random().toString(36).slice(2, 10);
+    }
+
+    function getCurrentProject() { return state.projects.find(p => p.id === state.selected.projectId); }
+    function getCurrentScenario() { return state.scenarios.find(s => s.id === state.selected.scenarioId); }
+    function getCurrentAgent() { return state.agents.find(a => a.id === state.selected.agentId); }
+    function getProjectAgents(projectId) { return state.agents.filter(a => a.projectId === projectId); }
+    function getProjectScenarios(projectId) { return state.scenarios.filter(s => s.projectId === projectId); }
+    function getAgentScenarios(agentId) { return state.scenarios.filter(s => s.agentId === agentId); }
+
+    function bindEvents() {
+      document.getElementById("addProject").onclick = () => {
+        const name = prompt("Project name?", "New Project");
+        if (!name) return;
+        const id = uid();
+        state.projects.push({ id, name });
+        state.selected.projectId = id;
+        state.selected.scenarioId = "";
+        state.selected.agentId = "";
+        state.expandedProjects = [...(state.expandedProjects || []), id];
+        saveState(); renderAll();
+      };
+
+      document.getElementById("renameProject").onclick = () => {
+        const p = getCurrentProject(); if (!p) return;
+        const name = prompt("Rename project", p.name); if (!name) return;
+        p.name = name; saveState(); renderAll();
+      };
+
+      document.getElementById("addScenario").onclick = () => {
+        if (!state.selected.projectId) return;
+        const agentId = state.selected.agentId || getProjectAgents(state.selected.projectId)[0]?.id;
+        if (!agentId) { alert("Add an agent first."); return; }
+        const name = prompt("Scenario name?", "New Scenario"); if (!name) return;
+        const id = uid();
+        state.scenarios.push({ id, projectId: state.selected.projectId, agentId, name, mode: "manual", messages: [], versions: [] });
+        state.selected.scenarioId = id;
+        state.selected.agentId = agentId;
+        if (!state.expandedProjects?.includes(state.selected.projectId)) {
+          state.expandedProjects = [...(state.expandedProjects || []), state.selected.projectId];
+        }
+        if (!state.expandedAgents?.includes(agentId)) {
+          state.expandedAgents = [...(state.expandedAgents || []), agentId];
+        }
+        saveState(); renderAll();
+      };
+
+      document.getElementById("duplicateScenario").onclick = () => {
+        const s = getCurrentScenario(); if (!s) return;
+        const copy = JSON.parse(JSON.stringify(s));
+        copy.id = uid();
+        copy.name = s.name + " (Copy)";
+        copy.versions = [];
+        copy.agentId = s.agentId || s.agentIds?.[0];
+        delete copy.agentIds;
+        state.scenarios.push(copy);
+        state.selected.scenarioId = copy.id;
+        saveState(); renderAll();
+      };
+
+      document.getElementById("compareScenarios").onclick = () => {
+        populateCompareSelectors();
+        el.compareDialog.showModal();
+        renderComparison();
+      };
+
+      document.getElementById("closeCompare").onclick = () => el.compareDialog.close();
+      document.getElementById("refreshCompare").onclick = renderComparison;
+
+      document.getElementById("addAgent").onclick = () => {
+        if (!state.selected.projectId) return;
+        state.selected.designMode = "wizard";
+        saveState();
+        openAgentInterview();
+        renderAll();
+      };
+
+      document.getElementById("renameAgent").onclick = () => {
+        const a = getCurrentAgent(); if (!a) return;
+        const name = prompt("Rename agent", a.name); if (!name) return;
+        a.name = name; saveState(); renderAll();
+      };
+
+      el.modeSelect.onchange = () => {
+        const s = getCurrentScenario(); if (!s) return;
+        s.mode = el.modeSelect.value;
+        saveState(); renderAll();
+      };
+      document.getElementById("leftToggle").onclick = () => {
+        const app = document.querySelector(".app");
+        const leftPanel = document.getElementById("leftPanel");
+        const collapsed = leftPanel.classList.toggle("collapsed");
+        app.classList.toggle("left-collapsed", collapsed);
+        try { localStorage.setItem("cdt_left_collapsed", collapsed ? "1" : "0"); } catch (_) {}
+      };
+      (() => {
+        try {
+          if (localStorage.getItem("cdt_left_collapsed") === "1") {
+            document.getElementById("leftPanel").classList.add("collapsed");
+            document.querySelector(".app").classList.add("left-collapsed");
+          }
+        } catch (_) {}
+      })();
+      document.querySelectorAll(".right-tab").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll(".right-tab").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".right-tab-panel").forEach(p => p.classList.remove("active"));
+          btn.classList.add("active");
+          const tab = btn.dataset.tab;
+          if (tab === "sample") document.getElementById("rightSampleConversation").classList.add("active");
+          else document.getElementById("rightSettings").classList.add("active");
+        };
+      });
+      el.designModeWizardBtn.onclick = () => setDesignMode("wizard");
+      el.designModeBacksolveBtn.onclick = () => setDesignMode("manual_backsolve");
+
+      document.getElementById("sendBtn").onclick = handleComposerSubmit;
+      el.messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleComposerSubmit(); }
+      });
+      document.getElementById("simulateBtn").onclick = simulateAgentResponse;
+      document.getElementById("exportBtn").onclick = exportSalesforceConfig;
+      document.getElementById("generateTests").onclick = generateTestCases;
+      el.refreshPersonaMatrix.onclick = renderPersonaMatrix;
+      el.matrixUtterance.oninput = renderPersonaMatrix;
+      el.matrixSituation.onchange = renderPersonaMatrix;
+      el.generateFromIntent.onclick = generateConversationFromIntent;
+      el.backsolveFromCurrent.onclick = backsolvePersonaFromConversation;
+
+      el.speakerSelectorWrap?.addEventListener("click", (e) => {
+        const pill = e.target.closest(".speaker-pill");
+        if (pill && el.speakerSelect) {
+          el.speakerSelect.value = pill.dataset.role;
+          updateSpeakerPills();
+        }
+      });
+
+      el.composerEl?.addEventListener("dragover", (e) => { e.preventDefault(); el.composerEl?.classList.add("dragover"); });
+      el.composerEl?.addEventListener("dragleave", (e) => { if (!el.composerEl?.contains(e.relatedTarget)) el.composerEl?.classList.remove("dragover"); });
+      el.composerEl?.addEventListener("drop", (e) => {
+        e.preventDefault(); el.composerEl?.classList.remove("dragover");
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = () => { el.imageUrlInput.value = reader.result; el.composerAttach?.classList.add("visible"); };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      document.addEventListener("paste", (e) => {
+        if (state.selected.designMode !== "manual_backsolve") return;
+        const s = getCurrentScenario();
+        if (!s) return;
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = () => {
+              const role = el.speakerSelect?.value || "user";
+              const agentId = role === "assistant" ? state.selected.agentId : null;
+              s.messages.push({ id: uid(), role, text: "", image: reader.result, agentId, ts: Date.now() });
+              saveState();
+              renderAll();
+            };
+            reader.readAsDataURL(blob);
+            break;
+          }
+        }
+      });
+
+      document.getElementById("savePersona").onclick = () => {
+        const a = getCurrentAgent(); if (!a) return;
+        a.name = el.agentName.value.trim() || a.name;
+        a.purpose = el.agentPurpose.value.trim();
+        a.identity = el.agentIdentity.value.trim();
+        a.register = el.agentRegister.value;
+        a.voice = el.agentVoice.value.trim();
+        a.tone = el.agentTone.value.trim();
+        a.style = el.agentStyle.value.trim();
+        a.interactionModel = el.agentInteractionModel.value;
+        a.guardrails = el.agentGuardrails.value.trim();
+        a.bannedPhrases = el.agentBanned.value.trim();
+        a.toneBySituation = {
+          normal: el.agentNormalTone.value.trim() || a.tone || "Trusted Advisor",
+          product_info: el.agentProductTone.value.trim() || a.tone || "Trusted Advisor",
+          escalation: el.agentEscalationTone.value.trim() || "Warm Coach"
+        };
+        saveState(); renderAll();
+      };
+
+      document.getElementById("inferPersona").onclick = inferPersonaFromConversation;
+
+      document.getElementById("saveApiSettings").onclick = () => {
+        state.api.endpoint = el.apiEndpoint.value.trim();
+        state.api.key = el.apiKey.value.trim();
+        state.api.model = el.apiModel.value.trim() || "gpt-4.1-mini";
+        saveState();
+        alert("API settings saved locally.");
+      };
+
+      el.interviewBack.onclick = stepBackInterview;
+      el.interviewNext.onclick = stepForwardInterview;
+      el.interviewCreate.onclick = finalizeAgentInterview;
+      el.voicePlaygroundSentence.oninput = () => {
+        interviewState.previewSentence = el.voicePlaygroundSentence.value.trim();
+        renderInterview();
+      };
+      el.voicePlaygroundSituation.onchange = () => {
+        interviewState.previewSituation = el.voicePlaygroundSituation.value;
+        renderInterview();
+      };
+
+      document.querySelectorAll(".collapsible-header[data-toggle]").forEach(header => {
+        header.onclick = () => {
+          const base = header.dataset.toggle.replace("Collapsible", "");
+          const section = document.getElementById(base + "Section") || document.getElementById(base + "Panel");
+          if (section && section.classList.contains("collapsible")) section.classList.toggle("collapsed");
+        };
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".persona-dim-pill")) {
+          document.querySelectorAll(".persona-dim-pill.open").forEach(p => p.classList.remove("open"));
+        }
+      });
+    }
+
+    function openAgentInterview() {
+      interviewState.step = 0;
+      interviewState.answers = {};
+      interviewState.transcript = [];
+      interviewState.previewSentence = "";
+      interviewState.previewSituation = "normal";
+      renderInterview();
+      renderPersonaDropdownNudges();
+    }
+
+    function stepBackInterview() {
+      if (interviewState.step <= 0) return;
+      interviewState.step -= 1;
+      renderInterview();
+      renderPersonaDropdownNudges();
+    }
+
+    function stepForwardInterview() {
+      const step = interviewFlow[interviewState.step];
+      const value = readInterviewAnswer(step);
+      if (!value && !step.optional) {
+        alert("Please answer this question before continuing.");
+        return;
+      }
+      interviewState.answers[step.id] = value || "";
+      el.messageInput.value = "";
+      if (interviewState.step < interviewFlow.length) {
+        interviewState.step += 1;
+      }
+      renderInterview();
+      renderPersonaDropdownNudges();
+    }
+
+    function readInterviewAnswer(step) {
+      if (step.type === "options") {
+        return interviewState.answers[step.id] || "";
+      }
+      return el.messageInput.value.trim();
+    }
+
+    function renderInterview() {
+      el.agentInterviewChat.innerHTML = "";
+      const maxStep = Math.min(interviewState.step, interviewFlow.length);
+      for (let i = 0; i < maxStep; i++) {
+        const step = interviewFlow[i];
+        appendInterviewMsg("assistant", step.prompt);
+        const answer = interviewState.answers[step.id] || "(Skipped)";
+        appendInterviewMsg("user", answer);
+      }
+
+      if (interviewState.step < interviewFlow.length) {
+        const current = interviewFlow[interviewState.step];
+        const nudges = current.nudges || [];
+        if (nudges.length && current.type === "text") {
+          appendInterviewMsgWithNudges("assistant", current.prompt, nudges, current.id);
+        } else {
+          appendInterviewMsg("assistant", current.prompt);
+        }
+        renderInterviewInput(current);
+      } else {
+        appendInterviewMsg("assistant", "Review looks good. Create this agent now?");
+        renderInterviewSummary();
+      }
+
+      const done = interviewState.step >= interviewFlow.length;
+      el.interviewCreate.style.display = done ? "inline-block" : "none";
+      el.interviewNext.style.display = done ? "none" : "inline-block";
+      el.agentInterviewChat.scrollTop = el.agentInterviewChat.scrollHeight;
+      renderSampleConversation();
+    }
+
+    function renderInterviewInput(step) {
+      el.interviewOptions.innerHTML = "";
+      const showInput = step.type === "text";
+      if (el.composerInputRow) el.composerInputRow.style.display = showInput ? "flex" : "none";
+      el.messageInput.placeholder = step.placeholder || "Type your answer...";
+      el.messageInput.value = step.type === "text" ? (interviewState.answers[step.id] || "") : "";
+      el.voicePlayground.style.display = "none";
+
+      if (step.type === "options") {
+        if (isVoiceSelectionStep(step.id)) {
+          el.voicePlayground.style.display = "grid";
+          el.voicePlaygroundSentence.value = interviewState.previewSentence || buildExampleSentence();
+          el.voicePlaygroundSituation.value = interviewState.previewSituation || "normal";
+          if (el.voicePlaygroundSituation) el.voicePlaygroundSituation.style.display = "";
+          renderVoiceCards(step);
+          return;
+        }
+        if (isExampleStep(step.id)) {
+          if (hasExamplePlayground(step.id)) {
+            el.voicePlayground.style.display = "grid";
+            el.voicePlaygroundSentence.value = interviewState.previewSentence || buildExampleSentence();
+            if (el.voicePlaygroundSituation) el.voicePlaygroundSituation.style.display = "none";
+          }
+          renderExampleCards(step);
+          return;
+        }
+        (step.options || []).forEach(opt => renderChipOption(step.id, opt));
+      }
+    }
+
+    function renderInterviewSummary() {
+      const summary = [
+        `Purpose: ${interviewState.answers.purpose || "Not specified"}`,
+        `Identity: ${interviewState.answers.identity || "Not specified"}`,
+        `Register: ${interviewState.answers.register || "Trusted Advisor"}`,
+        `Voice: ${interviewState.answers.voice === "Custom" ? (interviewState.answers.voiceCustom || "Custom") : (interviewState.answers.voice || "Neutral")}`,
+        `Tone baseline: ${interviewState.answers.toneBase || "Neutral"}`,
+        `Tone map: normal=${interviewState.answers.normalTone || "Trusted Advisor"}, product=${interviewState.answers.productTone || "Executive Brief"}, escalation=${interviewState.answers.escalationTone || "Warm Coach"}`,
+        `Style: ${interviewState.answers.style || "Not specified"}`,
+        `Interaction model: ${interviewState.answers.interactionModel || "Collaborative"}`,
+        `Guardrails: ${interviewState.answers.guardrails || "None"}`,
+        `Banned: ${interviewState.answers.bannedPhrases || "None"}`
+      ].join("\n");
+      appendInterviewMsg("user", summary);
+      el.interviewOptions.innerHTML = "";
+      if (el.composerInputRow) el.composerInputRow.style.display = "none";
+    }
+
+    function appendInterviewMsg(role, text) {
+      const card = document.createElement("div");
+      card.className = `msg ${role === "assistant" ? "assistant" : "user"}`;
+      card.style.maxWidth = "100%";
+      card.innerHTML = `<div class="meta"><span>${role === "assistant" ? "Persona Discovery" : "You"}</span></div><div>${escapeHtml(text)}</div>`;
+      el.agentInterviewChat.appendChild(card);
+    }
+
+    function appendInterviewMsgWithNudges(role, text, nudges, stepId) {
+      const card = document.createElement("div");
+      card.className = `msg ${role === "assistant" ? "assistant" : "user"}`;
+      card.style.maxWidth = "100%";
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = `<span>${role === "assistant" ? "Persona Discovery" : "You"}</span>`;
+      card.appendChild(meta);
+      const textDiv = document.createElement("div");
+      textDiv.innerHTML = escapeHtml(text);
+      card.appendChild(textDiv);
+      const nudgeRow = document.createElement("div");
+      nudgeRow.className = "question-nudges-in-chat";
+      nudges.forEach(nudgeText => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "question-nudge-chip";
+        btn.textContent = nudgeText;
+        btn.title = nudgeText;
+        btn.onclick = () => {
+          el.messageInput.value = nudgeText;
+          el.messageInput.focus();
+        };
+        nudgeRow.appendChild(btn);
+      });
+      if (stepId === "purpose") {
+        const focusBtn = document.createElement("button");
+        focusBtn.type = "button";
+        focusBtn.className = "question-nudge-chip";
+        focusBtn.textContent = "Or type your own below";
+        focusBtn.onclick = () => el.messageInput.focus();
+        nudgeRow.appendChild(focusBtn);
+      }
+      card.appendChild(nudgeRow);
+      el.agentInterviewChat.appendChild(card);
+    }
+
+    function appendInterviewNodeMessage(role, node) {
+      const card = document.createElement("div");
+      card.className = `msg ${role === "assistant" ? "assistant" : "user"}`;
+      card.style.maxWidth = "100%";
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = `<span>${role === "assistant" ? "Persona Discovery" : "You"}</span>`;
+      card.appendChild(meta);
+      card.appendChild(node);
+      el.agentInterviewChat.appendChild(card);
+    }
+
+    function renderChipOption(stepId, opt) {
+      const btn = document.createElement("button");
+      btn.className = "chip" + (interviewState.answers[stepId] === opt.label ? " active" : "");
+      btn.textContent = opt.note ? `${opt.label} - ${opt.note}` : opt.label;
+      btn.onclick = () => {
+        interviewState.answers[stepId] = opt.label;
+        renderInterview();
+      };
+      el.interviewOptions.appendChild(btn);
+    }
+
+    function isVoiceSelectionStep(stepId) {
+      return ["voice", "normalTone", "productTone", "escalationTone"].includes(stepId);
+    }
+
+    function isExampleStep(stepId) {
+      return ["register", "style", "interactionModel"].includes(stepId);
+    }
+
+    function hasExamplePlayground(stepId) {
+      return ["register", "interactionModel"].includes(stepId);
+    }
+
+    function renderVoiceCards(step) {
+      const selected = interviewState.answers[step.id] || "";
+      const purpose = interviewState.answers.purpose || "customer support";
+      const sentence = (interviewState.previewSentence || buildExampleSentence()).trim();
+      const situations = ["normal", "product_info", "escalation"];
+      const labels = { normal: "Normal", product_info: "Product Info", escalation: "Escalation" };
+      const gallery = document.createElement("div");
+      gallery.className = "tone-gallery";
+
+      (step.options || []).forEach(opt => {
+        const row = document.createElement("div");
+        row.className = "tone-row";
+        const meta = document.createElement("div");
+        meta.className = "tone-meta";
+        meta.innerHTML = `<b>${escapeHtml(opt.label)}</b>${escapeHtml(opt.realLife || opt.note || "N/A")}`;
+        row.appendChild(meta);
+
+        situations.forEach(sit => {
+          const btn = document.createElement("button");
+          const selectedMatch = selected === opt.label && (interviewState.previewSituation || "normal") === sit;
+          btn.className = "tone-cell" + (selectedMatch ? " active" : "");
+          btn.innerHTML = `<span class="k">${labels[sit]}</span>${escapeHtml(buildVoiceExample(opt.label, sentence, purpose, sit))}`;
+          btn.onclick = () => {
+            interviewState.answers[step.id] = opt.label;
+            interviewState.previewSituation = sit;
+            el.voicePlaygroundSituation.value = sit;
+            renderInterview();
+          };
+          row.appendChild(btn);
+        });
+        gallery.appendChild(row);
+      });
+
+      appendInterviewNodeMessage("assistant", gallery);
+    }
+
+    function buildExampleSentence() {
+      const purpose = interviewState.answers.purpose || "help customers";
+      return `Help me with ${purpose.toLowerCase()}.`;
+    }
+
+    function buildVoiceExample(voice, sentence, purpose, situation) {
+      const goal = (purpose || "support requests").toLowerCase();
+      const base = sentence || `Can you help with ${goal}?`;
+      if (voice === "Warm Coach") {
+        if (situation === "escalation") return `I hear your concern. Let's resolve this together right now. ${base}`;
+        if (situation === "product_info") return `Great question. Here's a clear walkthrough for ${goal}: ${base}`;
+        return `Absolutely, happy to help. ${base}`;
+      }
+      if (voice === "Trusted Advisor") {
+        if (situation === "escalation") return `I understand the impact. Recommended next step: stabilize first, then follow-up plan. ${base}`;
+        if (situation === "product_info") return `Based on your goal, the best option is to start with core features, then expand. ${base}`;
+        return `Certainly. I recommend we prioritize the highest-value path. ${base}`;
+      }
+      if (voice === "Direct Operator") {
+        if (situation === "escalation") return `Issue acknowledged. Step 1 contain, Step 2 fix, Step 3 confirm resolution. ${base}`;
+        if (situation === "product_info") return `Feature summary: capability, limits, integration path. ${base}`;
+        return `Understood. Here are the exact next steps. ${base}`;
+      }
+      if (voice === "Executive Brief") {
+        if (situation === "escalation") return `Status: elevated risk. Action: immediate owner assignment and customer update. ${base}`;
+        if (situation === "product_info") return `Recommendation: proceed with the most scalable option for ${goal}. ${base}`;
+        return `Summary: top recommendation, rationale, and next decision. ${base}`;
+      }
+      return `Custom voice preview: ${base}`;
+    }
+
+    function buildRegisterExample(register, sentence, purpose) {
+      const base = (sentence || `Can you help with ${(purpose || "support").toLowerCase()}?`).trim();
+      if (register === "Peer") return `I'd start with that. Want me to draft it?`;
+      if (register === "Trusted Advisor") return `I recommend we proceed with that approach—it fits your goal. Shall we continue?`;
+      if (register === "Subordinate") return `Would you like me to draft that for your review?`;
+      if (register === "Coach") return `Let's try that together. I'll walk you through it step by step.`;
+      return base;
+    }
+
+    function buildInteractionExample(interaction, sentence, purpose) {
+      if (interaction === "Proactive") return `I've updated the draft based on that. Review when ready.`;
+      if (interaction === "Reactive") return `What would you like me to do next?`;
+      if (interaction === "Collaborative") return `I suggest we do that. Does that work for you?`;
+      return "";
+    }
+
+    function renderExampleCards(step) {
+      const selected = interviewState.answers[step.id] || "";
+      const purpose = interviewState.answers.purpose || "customer support";
+      const sentence = (interviewState.previewSentence || buildExampleSentence()).trim();
+      const usePlayground = hasExamplePlayground(step.id);
+      const gallery = document.createElement("div");
+      gallery.className = "tone-gallery";
+
+      (step.options || []).forEach(opt => {
+        const row = document.createElement("div");
+        row.className = "tone-row-single";
+        const meta = document.createElement("div");
+        meta.className = "tone-meta";
+        meta.innerHTML = `<b>${escapeHtml(opt.label)}</b>${escapeHtml(opt.note || "")}`;
+        row.appendChild(meta);
+
+        const btn = document.createElement("button");
+        const selectedMatch = selected === opt.label;
+        btn.className = "tone-cell" + (selectedMatch ? " active" : "");
+        let exampleText = opt.example || "";
+        if (usePlayground && step.id === "register") exampleText = buildRegisterExample(opt.label, sentence, purpose);
+        else if (usePlayground && step.id === "interactionModel") exampleText = buildInteractionExample(opt.label, sentence, purpose);
+        btn.innerHTML = escapeHtml(exampleText);
+        btn.onclick = () => {
+          interviewState.answers[step.id] = opt.label;
+          renderInterview();
+        };
+        row.appendChild(btn);
+        gallery.appendChild(row);
+      });
+
+      appendInterviewNodeMessage("assistant", gallery);
+    }
+
+    function deriveAgentNameFromPurpose(purpose) {
+      if (!purpose || !purpose.trim()) return "New Persona";
+      const words = purpose.trim().split(/\s+/).slice(0, 3);
+      return words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") || "New Persona";
+    }
+
+    function finalizeAgentInterview() {
+      const name = deriveAgentNameFromPurpose(interviewState.answers.purpose) || "New Persona";
+      const voice = interviewState.answers.voice === "Custom"
+        ? (interviewState.answers.voiceCustom || "Custom")
+        : (interviewState.answers.voice || "");
+      const id = uid();
+      state.agents.push({
+        id,
+        projectId: state.selected.projectId,
+        name,
+        purpose: interviewState.answers.purpose || "",
+        identity: interviewState.answers.identity || "",
+        register: interviewState.answers.register || "Trusted Advisor",
+        voice,
+        tone: interviewState.answers.toneBase || "Matter-of-fact",
+        style: interviewState.answers.style || "",
+        interactionModel: interviewState.answers.interactionModel || "Collaborative",
+        guardrails: interviewState.answers.guardrails || "",
+        bannedPhrases: interviewState.answers.bannedPhrases || "",
+        toneBySituation: {
+          normal: interviewState.answers.normalTone || interviewState.answers.toneBase || "Trusted Advisor",
+          product_info: interviewState.answers.productTone || interviewState.answers.toneBase || "Trusted Advisor",
+          escalation: interviewState.answers.escalationTone || "Warm Coach"
+        }
+      });
+      const s = getCurrentScenario();
+      if (s) s.agentId = id;
+      state.selected.agentId = id;
+      if (!state.expandedProjects?.includes(state.selected.projectId)) {
+        state.expandedProjects = [...(state.expandedProjects || []), state.selected.projectId];
+      }
+      state.expandedAgents = [...(state.expandedAgents || []), id];
+      saveState();
+      renderAll();
+    }
+
+    function renderAll() {
+      renderSidebarTree();
+      renderHeader();
+      renderDesignModePanels();
+      renderPersonaMatrix();
+      renderSampleConversation();
+      renderComposer();
+      renderPersistentNudges();
+      renderChat();
+      renderPersonaPanel();
+      renderScoring();
+      renderApiSettings();
+    }
+
+    function renderSidebarTree() {
+      el.sidebarTree.innerHTML = "";
+      if (!state.projects.length) {
+        const empty = document.createElement("div");
+        empty.className = "list-empty";
+        empty.style.marginTop = "8px";
+        empty.textContent = "No projects yet.";
+        el.sidebarTree.appendChild(empty);
+        return;
+      }
+      state.projects.forEach(p => {
+        const agents = getProjectAgents(p.id);
+        const projRow = document.createElement("div");
+        projRow.className = "tree-item tree-item-project";
+        projRow.innerHTML = `
+          <div class="tree-btn ${p.id === state.selected.projectId ? "selected" : ""}" data-select-project="${p.id}">
+            <span class="tree-folder">&#128193;</span>
+            <span class="tree-type-tag">Project</span>
+            <span class="tree-label">${escapeHtml(p.name)}</span>
+            <button class="tree-edit" data-edit-project="${p.id}" title="Rename project">&#9998;</button>
+            <button class="tree-add" data-add-agent="${p.id}" title="Add persona">+</button>
+          </div>
+        `;
+        projRow.querySelector("[data-select-project]").onclick = (e) => {
+          if (e.target.classList.contains("tree-folder") || e.target.classList.contains("tree-add") || e.target.classList.contains("tree-edit")) return;
+          state.selected.projectId = p.id;
+          const firstAgent = agents[0];
+          state.selected.agentId = firstAgent?.id || "";
+          const firstScenarios = firstAgent ? getAgentScenarios(firstAgent.id) : [];
+          state.selected.scenarioId = firstScenarios[0]?.id || "";
+          saveState(); renderAll();
+        };
+        const addAgentBtn = projRow.querySelector("[data-add-agent]");
+        if (addAgentBtn) addAgentBtn.onclick = (e) => { e.stopPropagation(); state.selected.projectId = p.id; document.getElementById("addAgent").click(); };
+        projRow.querySelector("[data-edit-project]")?.addEventListener("click", (e) => { e.stopPropagation(); const name = prompt("Rename project", p.name); if (name) { p.name = name; saveState(); renderAll(); } });
+        el.sidebarTree.appendChild(projRow);
+
+        if (!agents.length) {
+            const emptyAgent = document.createElement("div");
+            emptyAgent.className = "tree-item tree-item-nested tree-empty";
+            emptyAgent.innerHTML = `<div class="tree-btn" data-add-agent-empty="${p.id}"><span class="tree-connector" style="cursor:default;">&#9500;</span><span class="tree-type-tag">Persona</span><span class="tree-label">No personas yet.</span><button class="tree-add">+ Add persona</button></div>`;
+            emptyAgent.querySelector("[data-add-agent-empty]").onclick = (e) => {
+              e.stopPropagation();
+              state.selected.projectId = p.id;
+              document.getElementById("addAgent").click();
+            };
+            el.sidebarTree.appendChild(emptyAgent);
+        } else {
+            agents.forEach(a => {
+              const scenarios = getAgentScenarios(a.id);
+              const agentRow = document.createElement("div");
+              agentRow.className = "tree-item tree-item-nested";
+        agentRow.innerHTML = `
+          <div class="tree-btn ${a.id === state.selected.agentId ? "selected" : ""}" data-select-agent="${a.id}">
+            <span class="tree-connector" style="cursor:default;">&#9500;</span>
+            <span class="tree-type-tag">Persona</span>
+            <span class="tree-label">${escapeHtml(a.name)}</span>
+            <button class="tree-edit" data-edit-agent="${a.id}" title="Rename persona">&#9998;</button>
+            <button class="tree-add" data-add-scenario="${a.id}" title="Add scenario">+</button>
+          </div>
+        `;
+        agentRow.querySelector("[data-select-agent]").onclick = (e) => {
+          if (e.target.classList.contains("tree-connector") || e.target.classList.contains("tree-add") || e.target.classList.contains("tree-edit")) return;
+                state.selected.projectId = p.id;
+                state.selected.agentId = a.id;
+                state.selected.scenarioId = scenarios[0]?.id || "";
+                saveState(); renderAll();
+              };
+              const addScenBtn = agentRow.querySelector("[data-add-scenario]");
+              if (addScenBtn) addScenBtn.onclick = (e) => { e.stopPropagation(); state.selected.projectId = p.id; state.selected.agentId = a.id; document.getElementById("addScenario").click(); };
+              agentRow.querySelector("[data-edit-agent]")?.addEventListener("click", (e) => { e.stopPropagation(); const name = prompt("Rename persona", a.name); if (name) { a.name = name; saveState(); renderAll(); } });
+              el.sidebarTree.appendChild(agentRow);
+
+              if (!scenarios.length) {
+                  const emptyScen = document.createElement("div");
+                  emptyScen.className = "tree-item tree-item-nested tree-item-nested-deep tree-empty";
+                  emptyScen.innerHTML = `<div class="tree-btn" data-add-scenario-empty="${a.id}"><span class="tree-connector" style="cursor:default;">&#9492;</span><span class="tree-type-tag">Scenario</span><span class="tree-label">No scenarios yet.</span><button class="tree-add">+ Add scenario</button></div>`;
+                  emptyScen.querySelector("[data-add-scenario-empty]").onclick = (e) => {
+                    e.stopPropagation();
+                    state.selected.projectId = p.id;
+                    state.selected.agentId = a.id;
+                    document.getElementById("addScenario").click();
+                  };
+                  el.sidebarTree.appendChild(emptyScen);
+              } else {
+                  scenarios.forEach(s => {
+                    const scenRow = document.createElement("div");
+                    scenRow.className = "tree-item tree-item-nested tree-item-nested-deep";
+                    const lastMsg = s.messages[s.messages.length - 1];
+                    const timeAgo = lastMsg ? formatTimeAgo(Date.now() - lastMsg.ts) : "";
+                    const displayName = s.name.length > 28 ? s.name.slice(0, 25) + "..." : s.name;
+                    scenRow.innerHTML = `
+                      <div class="tree-btn ${s.id === state.selected.scenarioId ? "selected" : ""}" data-select-scenario="${s.id}">
+                        <span class="tree-connector" style="cursor:default;">&#9492;</span>
+                        <span class="tree-type-tag">Scenario</span>
+                        <span class="tree-label" title="${escapeAttr(s.name)}">${escapeHtml(displayName)}</span>
+                        <button class="tree-edit" data-edit-scenario="${s.id}" title="Rename scenario">&#9998;</button>
+                        ${timeAgo ? `<span class="tree-meta">${timeAgo}</span>` : ""}
+                      </div>
+                    `;
+                    scenRow.querySelector("[data-select-scenario]").onclick = (e) => {
+                      if (e.target.classList.contains("tree-edit")) return;
+                      state.selected.projectId = p.id;
+                      state.selected.agentId = s.agentId || "";
+                      state.selected.scenarioId = s.id;
+                      saveState(); renderAll();
+                    };
+                    scenRow.querySelector("[data-edit-scenario]")?.addEventListener("click", (e) => { e.stopPropagation(); const name = prompt("Rename scenario", s.name); if (name) { s.name = name; saveState(); renderAll(); } });
+                    el.sidebarTree.appendChild(scenRow);
+                  });
+              }
+            });
+        }
+      });
+    }
+
+    function formatTimeAgo(ms) {
+      if (ms < 60000) return "now";
+      if (ms < 3600000) return Math.floor(ms / 60000) + "m";
+      if (ms < 86400000) return Math.floor(ms / 3600000) + "h";
+      return Math.floor(ms / 86400000) + "d";
+    }
+
+    function renderHeader() {
+      const p = getCurrentProject(), s = getCurrentScenario();
+      const a = getCurrentAgent();
+      const parts = [p?.name || "Project", a?.name || "Persona", s?.name || "Scenario"];
+      el.breadcrumb.innerHTML = `<span class="center-title-text">${escapeHtml(parts.join(" / "))}</span>`;
+      if (s) el.modeSelect.value = s.mode || "manual";
+      const mode = state.selected.designMode || "wizard";
+      el.designModeWizardBtn.classList.toggle("active", mode === "wizard");
+      el.designModeBacksolveBtn.classList.toggle("active", mode === "manual_backsolve");
+    }
+
+    function renderDesignModePanels() {
+      const mode = state.selected.designMode || "wizard";
+      el.chat.style.display = mode === "manual_backsolve" ? "flex" : "none";
+      if (el.mainWizard) {
+        el.mainWizard.style.display = mode === "wizard" ? "flex" : "none";
+        if (mode === "wizard" && !el.agentInterviewChat.children.length) openAgentInterview();
+      }
+      if (el.composerEl) el.composerEl.style.display = "flex";
+      el.manualBacksolvePanel.style.display = mode === "manual_backsolve" ? "block" : "none";
+      if (el.personaMatrixSection) el.personaMatrixSection.style.display = mode === "wizard" ? "block" : "none";
+      if (el.composerInputRow) {
+        if (mode === "manual_backsolve") {
+          el.composerInputRow.style.display = "flex";
+          el.messageInput.placeholder = "Type your message or paste a screenshot...";
+          if (el.speakerSelectorWrap) {
+            el.speakerSelectorWrap.style.display = "flex";
+            updateSpeakerPills();
+          }
+        } else {
+          if (el.speakerSelectorWrap) el.speakerSelectorWrap.style.display = "none";
+        }
+        if (mode !== "manual_backsolve" && el.composerInputRow) {
+          if (interviewState && interviewState.step < interviewFlow.length) {
+          const step = interviewFlow[interviewState.step];
+          const showInput = step && step.type === "text";
+          el.composerInputRow.style.display = showInput ? "flex" : "none";
+          if (showInput) el.messageInput.placeholder = step.placeholder || "Type your answer...";
+        } else if (interviewState && interviewState.step >= interviewFlow.length) {
+          el.composerInputRow.style.display = "none";
+        } else {
+          el.composerInputRow.style.display = "flex";
+          el.messageInput.placeholder = "Type your message...";
+        }
+        }
+      }
+    }
+
+    function updateSpeakerPills() {
+      if (!el.speakerSelectorWrap) return;
+      const role = el.speakerSelect?.value || "user";
+      el.speakerSelectorWrap.querySelectorAll(".speaker-pill").forEach((p) => {
+        p.classList.toggle("active", p.dataset.role === role);
+      });
+    }
+
+    const matrixExampleUtterances = [
+      "Can you summarize this and save it?",
+      "I'm frustrated with the pricing changes.",
+      "What features does the Enterprise plan include?"
+    ];
+
+    function renderPersonaMatrix() {
+      if (!el.personaMatrixContainer) return;
+      if (el.matrixExampleChips) {
+        el.matrixExampleChips.innerHTML = "";
+        matrixExampleUtterances.forEach(u => {
+          const btn = document.createElement("button");
+          btn.className = "chip";
+          btn.textContent = u.length > 35 ? u.slice(0, 35) + "…" : u;
+          btn.title = u;
+          btn.onclick = () => { el.matrixUtterance.value = u; renderPersonaMatrix(); };
+          el.matrixExampleChips.appendChild(btn);
+        });
+      }
+      const utterance = (el.matrixUtterance.value || "").trim() || "Can you summarize this and save it?";
+      const situation = el.matrixSituation.value || "normal";
+      const labels = { normal: "Normal", product_info: "Product Info", escalation: "Escalation" };
+      const rows = personaArchetypes.map(p => {
+        const response = generatePersonaMatrixResponse(p, utterance, situation);
+        const wc = response.split(/\s+/).filter(Boolean).length;
+        return `
+          <div class="matrix-row">
+            <div><b>${escapeHtml(p.name)}</b><div class="subtle">${escapeHtml(p.identity)}</div></div>
+            <div>${escapeHtml(p.register)}</div>
+            <div>${escapeHtml(p.voice)}</div>
+            <div class="matrix-response">${escapeHtml(response)}<div class="matrix-wordcount">${wc} words</div></div>
+          </div>
+        `;
+      }).join("");
+      el.personaMatrixContainer.innerHTML = `
+        <div class="subtle" style="margin-bottom:8px;">Example utterance in <b>${labels[situation]}</b> situation</div>
+        <div class="matrix-table" style="border:1px solid var(--line); border-radius:8px; background:#fff;">
+          <div class="matrix-row matrix-header">
+            <div>Persona</div>
+            <div>Register</div>
+            <div>Voice</div>
+            <div>Example Response</div>
+          </div>
+          ${rows}
+        </div>
+      `;
+    }
+
+    function generateAgentSampleResponse(agent, utterance, situation) {
+      if (!agent) return null;
+      const reg = (agent.register || "Trusted Advisor").replace(/\s*—.*$/, "").trim();
+      const map = { "Trusted Advisor": "Trusted Advisor", "Coach": "Patient Coach", "Peer": "Direct Operator", "Subordinate": "Formal Assistant" };
+      const archetype = personaArchetypes.find(p => p.name === (map[reg] || "Trusted Advisor")) || personaArchetypes[1];
+      return generatePersonaMatrixResponse(archetype, utterance, situation);
+    }
+
+    function getWizardPersonaForPreview() {
+      if (state.selected.designMode !== "wizard" || !interviewState) return null;
+      const r = (interviewState.answers.register || "").replace(/\s*—.*$/, "").trim();
+      if (!r) return null;
+      const map = { "Trusted Advisor": "Trusted Advisor", "Coach": "Patient Coach", "Peer": "Direct Operator", "Subordinate": "Formal Assistant" };
+      return personaArchetypes.find(p => p.name === (map[r] || "Trusted Advisor")) || personaArchetypes[1];
+    }
+
+    function renderSampleConversation() {
+      const container = document.getElementById("sampleConversation");
+      if (!container) return;
+      const a = getCurrentAgent();
+      const s = getCurrentScenario();
+      const sampleUtterances = ["Can you summarize this and save it?", "I'm frustrated with the pricing changes.", "What features does the Enterprise plan include?"];
+
+      if (s && s.messages && s.messages.length > 0) {
+        container.innerHTML = s.messages.slice(-6).map(m => {
+          const text = m.text || "";
+          return `<div class="sample-msg ${m.role}">${escapeHtml(text)}</div>`;
+        }).join("");
+        return;
+      }
+
+      const persona = a ? null : getWizardPersonaForPreview();
+      const effectiveAgent = a || (persona ? { register: persona.register } : null);
+
+      if (!effectiveAgent) {
+        container.innerHTML = `
+          <div class="sample-conv-empty">
+            <div class="sample-conv-empty-icon">👤</div>
+            <div class="sample-conv-empty-title">Live preview</div>
+            <div class="sample-conv-empty-text">Complete the persona questions in the wizard to see how your agent will respond. The preview updates as you answer.</div>
+          </div>`;
+        return;
+      }
+
+      const situation = "normal";
+      container.innerHTML = sampleUtterances.map((u, i) => {
+        const resp = persona
+          ? generatePersonaMatrixResponse(persona, u, situation)
+          : generateAgentSampleResponse(a, u, situation);
+        return `<div class="sample-msg user">${escapeHtml(u)}</div><div class="sample-msg assistant">${escapeHtml(resp)}</div>`;
+      }).join("");
+    }
+
+    function generatePersonaMatrixResponse(persona, utterance, situation) {
+      const u = utterance.replace(/\?+$/, "").trim();
+      if (persona.name === "Direct Operator") {
+        if (situation === "escalation") return `Acknowledged. Here is the fix path now: 1) isolate issue, 2) apply correction, 3) confirm. For "${u}", I can execute step 1 immediately.`;
+        if (situation === "product_info") return `Short answer: yes. Feature scope, limits, and setup for "${u}" are below.`;
+        return `Done. I can handle "${u}" now. Confirm and I’ll proceed.`;
+      }
+      if (persona.name === "Patient Coach") {
+        if (situation === "escalation") return `I hear you. Let’s solve "${u}" together. First we stabilize, then I’ll walk you through each step clearly.`;
+        if (situation === "product_info") return `Great question. For "${u}", I’ll explain what it does, when to use it, and a simple example.`;
+        return `Happy to help with "${u}". I’ll start with a quick summary, then we can refine it together.`;
+      }
+      if (persona.name === "Trusted Advisor") {
+        if (situation === "escalation") return `Understood. Priority is restoring trust and service continuity. For "${u}", my recommendation is immediate containment plus a clear follow-up plan.`;
+        if (situation === "product_info") return `For "${u}", I recommend starting with the highest-value capability, then expanding to advanced options as needed.`;
+        return `For "${u}", my recommendation is option A first, with option B as fallback based on constraints.`;
+      }
+      if (situation === "escalation") return `I understand your concern. Would you like me to proceed with an escalation-ready summary for "${u}"?`;
+      if (situation === "product_info") return `Certainly. Would you like me to provide a formal breakdown of "${u}", including prerequisites and limitations?`;
+      return `Would you like me to proceed with "${u}" now?`;
+    }
+
+    function setDesignMode(mode) {
+      state.selected.designMode = mode;
+      saveState();
+      renderAll();
+    }
+
+    function renderComposer() {
+      const s = getCurrentScenario();
+      const projectAgents = getProjectAgents(state.selected.projectId);
+      if (el.assistantAgentSelect) {
+        el.assistantAgentSelect.innerHTML = "";
+        projectAgents.forEach(a => {
+          const opt = document.createElement("option");
+          opt.value = a.id;
+          opt.textContent = a.name;
+          el.assistantAgentSelect.appendChild(opt);
+        });
+        el.assistantAgentSelect.value = state.selected.agentId || projectAgents[0]?.id || "";
+      }
+    }
+
+    const AGENT_USE_CASE_BUBBLES = [
+      { label: "Help employees with CRM updates", purpose: "Helps employees with CRM updates and record management." },
+      { label: "Meeting updates", purpose: "Meeting summaries and updates." },
+      { label: "Case creation", purpose: "Case creation and updates." },
+      { label: "Policy or knowledge lookups", purpose: "Policy and knowledge lookups." },
+      { label: "Case deflection", purpose: "Case deflection and self-service." },
+      { label: "Pipeline management", purpose: "Pipeline management across channels." },
+      { label: "Orders, returns, product recommendations", purpose: "Order status, returns, and product recommendations." }
+    ];
+
+    const PERSONA_DIMENSIONS = [
+      { id: "identity", label: "Identity", field: "identity", options: [
+        "direct, resourceful, no-nonsense",
+        "patient, curious, supportive",
+        "calm, strategic, pragmatic",
+        "precise, deferential, compliant",
+        "warm, approachable, empathetic"
+      ]},
+      { id: "register", label: "Register", field: "register", options: [
+        { value: "Peer", label: "Peer — equal footing (e.g. \"Want to save it?\")" },
+        { value: "Trusted Advisor", label: "Trusted Advisor — guiding, strategic" },
+        { value: "Subordinate", label: "Subordinate — defers, asks permission" },
+        { value: "Coach", label: "Coach — supportive, developmental" }
+      ]},
+      { id: "voice", label: "Voice", field: "voice", options: [
+        { value: "Terse", label: "Terse — minimal words (e.g. \"Done.\")" },
+        { value: "Conversational", label: "Conversational — natural (e.g. \"All set, saved.\")" },
+        { value: "Clear, professional", label: "Clear, professional" },
+        { value: "Formal, explicit", label: "Formal, explicit" }
+      ]},
+      { id: "tone", label: "Tone", field: "tone", options: [
+        "Matter-of-fact",
+        "Encouraging",
+        "Neutral",
+        "Warm and supportive"
+      ]},
+      { id: "style", label: "Style", field: "style", options: [
+        "Compact: emoji + bullets",
+        "Narrative: headlines + detail",
+        "Summary first, then bullets",
+        "Fully explicit, step-by-step"
+      ]},
+      { id: "interaction", label: "Interaction", field: "interactionModel", options: [
+        { value: "Proactive", label: "Proactive — acts first, then confirms" },
+        { value: "Reactive", label: "Reactive — waits for direction" },
+        { value: "Collaborative", label: "Collaborative — proposes and confirms" }
+      ]},
+      { id: "guardrails", label: "Guardrails", field: "guardrails", options: [
+        "Human-in-the-loop: confirm before writes",
+        "Autonomous: self-execute reads, gate deletes",
+        "Be factual, avoid legal advice",
+        "Never share PII"
+      ]}
+    ];
+
+    const PERSONA_GRID_ORDER = ["identity", "register", "voice", "interaction", "tone", "style", "guardrails"];
+
+    function applyPersonaDimChoice(dim, newVal) {
+      const f = dim.field === "interaction" ? "interactionModel" : dim.field;
+      let agent = getCurrentAgent();
+      if (!agent && state.selected.agentId) agent = state.agents.find(x => x.id === state.selected.agentId);
+      if (!agent) {
+        const projectAgents = getProjectAgents(state.selected.projectId);
+        if (projectAgents.length) { agent = projectAgents[0]; state.selected.agentId = agent.id; }
+      }
+      if (agent) {
+        agent[f] = newVal;
+        saveState();
+        renderAll();
+      } else if (state.selected.designMode === "wizard") {
+        const ansMap = { identity: "identity", register: "register", voice: "voice", tone: "toneBase", style: "style", interactionModel: "interactionModel", guardrails: "guardrails" };
+        interviewState.answers[ansMap[f] || f] = newVal;
+        renderInterview();
+      }
+    }
+
+    function renderPersonaDropdownNudges() {
+      const containers = Array.from(document.querySelectorAll("[data-persona-nudges=\"true\"]"));
+      if (!containers.length) return;
+      let a;
+      try { a = getCurrentAgent(); } catch (e) { a = null; }
+      const getField = (dim) => dim.field === "interaction" ? "interactionModel" : dim.field;
+      const optVal = (opt) => typeof opt === "object" ? opt.value : opt;
+      const optLabel = (opt) => typeof opt === "object" ? opt.label : opt;
+      const dims = PERSONA_GRID_ORDER.map(id => PERSONA_DIMENSIONS.find(d => d.id === id)).filter(Boolean);
+      const row1 = dims.slice(0, 4);
+      const row2 = dims.slice(4, 7);
+      const ansMap = { identity: "identity", register: "register", voice: "voice", tone: "toneBase", style: "style", interactionModel: "interactionModel", guardrails: "guardrails" };
+      const renderPill = (dim) => {
+        const field = getField(dim);
+        const ansKey = ansMap[dim.field === "interaction" ? "interactionModel" : dim.field] || dim.field;
+        const fromAgent = a ? (a[field] || (field === "register" ? "Trusted Advisor" : optVal(dim.options[0]))) : null;
+        const fromWizard = (state.selected.designMode === "wizard" && interviewState?.answers) ? interviewState.answers[ansKey] : null;
+        const val = fromWizard || fromAgent || (field === "register" ? "Trusted Advisor" : optVal(dim.options[0]));
+        const optsHtml = dim.options.map((opt) => {
+          const v = optVal(opt);
+          const lbl = optLabel(opt);
+          return `<div class="persona-nudge-option ${val === v ? "selected" : ""}" data-value="${escapeAttr(v)}">${escapeHtml(lbl)}</div>`;
+        }).join("");
+        return `<div class="persona-dim-pill" data-dim="${dim.id}" tabindex="0"><span>${escapeHtml(dim.label)}</span><span class="persona-dim-pill-caret">&#9660;</span><div class="persona-nudge-dropdown">${optsHtml}</div></div>`;
+      };
+      const showUseCaseSection = state.selected.designMode === "wizard" && interviewState && interviewState.step === 0;
+      let useCaseHtml = "";
+      if (showUseCaseSection) {
+        const bubblesHtml = AGENT_USE_CASE_BUBBLES.map(b => `<button type="button" class="agent-use-case-bubble" data-purpose="${escapeAttr(b.purpose)}">${escapeHtml(b.label)}</button>`).join("");
+        useCaseHtml = `<div class="agent-use-case-section"><div class="agent-use-case-header">What does your agent do?</div><div class="agent-use-case-bubbles">${bubblesHtml}<input type="text" class="agent-use-case-input-bubble" placeholder="Or type your own below" data-agent-use-case-custom /></div></div>`;
+      }
+      const gridHtml = `
+        <div class="persona-nudge-grid persona-nudge-grid-row1">${row1.map(renderPill).join("")}</div>
+        <div class="persona-nudge-grid persona-nudge-grid-row2">${row2.map(renderPill).join("")}</div>
+      `;
+      const html = useCaseHtml + gridHtml;
+      containers.forEach((container) => {
+        container.innerHTML = html;
+        container.querySelectorAll(".agent-use-case-bubble").forEach((btn) => {
+          const purpose = btn.dataset.purpose;
+          if (purpose) {
+            btn.onclick = () => {
+              interviewState.answers.purpose = purpose;
+              interviewState.step = 1;
+              if (el.messageInput) el.messageInput.value = "";
+              renderInterview();
+              renderPersonaDropdownNudges();
+            };
+          }
+        });
+        const customInput = container.querySelector(".agent-use-case-input-bubble");
+        if (customInput) {
+          customInput.onkeydown = (e) => {
+            if (e.key === "Enter" && customInput.value.trim()) {
+              e.preventDefault();
+              interviewState.answers.purpose = customInput.value.trim();
+              interviewState.step = 1;
+              customInput.value = "";
+              if (el.messageInput) el.messageInput.value = "";
+              renderInterview();
+              renderPersonaDropdownNudges();
+            }
+          };
+        }
+        container.querySelectorAll(".persona-dim-pill").forEach((pill) => {
+          const dim = PERSONA_DIMENSIONS.find(d => d.id === pill.dataset.dim);
+          if (!dim) return;
+          pill.onclick = (e) => {
+            if (e.target.closest(".persona-nudge-option")) return;
+            document.querySelectorAll(".persona-dim-pill.open").forEach(p => { if (p !== pill) p.classList.remove("open"); });
+            pill.classList.toggle("open");
+          };
+          pill.querySelectorAll(".persona-nudge-option").forEach((opt) => {
+            opt.onclick = (e) => {
+              e.stopPropagation();
+              const v = opt.dataset.value;
+              applyPersonaDimChoice(dim, v);
+              pill.classList.remove("open");
+            };
+          });
+        });
+      });
+    }
+
+    function renderPersistentNudges() {
+      renderPersonaDropdownNudges();
+    }
+
+    function getConversationalNudges(msg, scenario, idx) {
+      const nudges = [];
+      if (msg.role !== "assistant") return nudges;
+      const text = (msg.text || "").toLowerCase();
+      if (/summarize|summary/.test(text)) nudges.push("Can you expand on that?", "Save this for later");
+      else if (/frustrat|angry|upset/.test(text)) nudges.push("I need to speak to a manager", "What are my options?");
+      else if (/feature|plan|include/.test(text)) nudges.push("How much does that cost?", "Compare to the basic plan");
+      else nudges.push("Tell me more", "What's the next step?", "I have another question");
+      return nudges.slice(0, 3);
+    }
+
+    function renderChat() {
+      const s = getCurrentScenario();
+      el.chat.innerHTML = "";
+      if (!s) {
+        const empty = document.createElement("div");
+        empty.className = "chat-empty";
+        empty.innerHTML = "<div class='chat-empty-icon'>💬</div><div>Select a scenario to view or build the conversation.</div>";
+        el.chat.appendChild(empty);
+        return;
+      }
+      if (!s.messages.length) {
+        const empty = document.createElement("div");
+        empty.className = "chat-empty";
+        empty.innerHTML = "<div class='chat-empty-icon'>💬</div><div>No messages yet.</div><div class='subtle' style='margin-top:6px;'>Type below, paste a screenshot, or add messages as User or Agent.</div>";
+        el.chat.appendChild(empty);
+        return;
+      }
+      s.messages.forEach((m, idx) => {
+        const card = document.createElement("div");
+        card.className = `msg ${m.role}`;
+        const agentName = m.agentId ? state.agents.find(a => a.id === m.agentId)?.name || "Agent" : "";
+        const situationLabel = m.situation ? ` [${m.situation}]` : "";
+        const convNudges = m.role === "assistant" ? getConversationalNudges(m, s, idx) : [];
+        const nudgeHtml = convNudges.length ? `
+          <div class="conversation-nudges">
+            ${convNudges.map(n => `<button type="button" class="conversation-nudge-chip" data-nudge-msg="${m.id}" data-nudge-text="${escapeAttr(n)}"><span class="nudge-chip-icon">✦</span>${escapeHtml(n)}</button>`).join("")}
+          </div>
+        ` : "";
+        card.innerHTML = `
+          <div class="meta">
+            <span>${m.role}${agentName ? ` (${escapeHtml(agentName)})` : ""}${escapeHtml(situationLabel)}</span>
+            <span class="meta-time">${new Date(m.ts).toLocaleTimeString()}</span>
+          </div>
+          <div class="text">${escapeHtml(m.text || "")}</div>
+          ${m.image ? `<img src="${escapeAttr(m.image)}" alt="attachment"/>` : ""}
+          ${nudgeHtml}
+        `;
+        card.tabIndex = 0;
+        el.chat.appendChild(card);
+      });
+
+      el.chat.querySelectorAll(".conversation-nudge-chip").forEach(btn => {
+        btn.onclick = () => {
+          const text = btn.dataset.nudgeText;
+          if (text && s) {
+            el.messageInput.value = text;
+            handleSend();
+          }
+        };
+      });
+
+      el.chat.scrollTop = el.chat.scrollHeight;
+    }
+
+    function renderPersonaPanel() {
+      const a = getCurrentAgent();
+      if (el.agentPersonaSummary) {
+        el.agentPersonaSummary.textContent = a ? `${a.name || "Unnamed"} — ${(a.purpose || "").slice(0, 40)}${(a.purpose || "").length > 40 ? "…" : ""}` : "No agent selected.";
+      }
+      if (!a) return;
+      el.agentName.value = a.name || "";
+      el.agentPurpose.value = a.purpose || "";
+      el.agentIdentity.value = a.identity || "";
+      el.agentRegister.value = a.register || "Trusted Advisor";
+      el.agentVoice.value = a.voice || "";
+      el.agentTone.value = a.tone || "";
+      el.agentStyle.value = a.style || "";
+      el.agentInteractionModel.value = a.interactionModel || "Collaborative";
+      el.agentGuardrails.value = a.guardrails || "";
+      el.agentBanned.value = a.bannedPhrases || "";
+      el.agentNormalTone.value = a.toneBySituation?.normal || a.tone || "";
+      el.agentProductTone.value = a.toneBySituation?.product_info || a.tone || "";
+      el.agentEscalationTone.value = a.toneBySituation?.escalation || "Warm Coach";
+    }
+
+    function renderScoring() {
+      const s = getCurrentScenario();
+      if (!s) { el.scorePanel.textContent = "No scenario selected."; return; }
+      const score = calculateScore(s);
+      el.scorePanel.innerHTML = "";
+      addScore("Tone Match", score.toneMatch);
+      addScore("Guardrail Compliance", score.guardrailCompliance);
+      addScore("Task Completion", score.taskCompletion);
+      addScore("Image Utilization", score.imageUtilization);
+
+      function addScore(label, val) {
+        const row = document.createElement("div");
+        row.className = "score";
+        const cls = val >= 80 ? "ok" : val >= 50 ? "warn" : "bad";
+        row.innerHTML = `<span>${label}</span><span class="pill ${cls}">${val}%</span>`;
+        el.scorePanel.appendChild(row);
+      }
+    }
+
+    function renderApiSettings() {
+      el.apiEndpoint.value = state.api.endpoint || "";
+      el.apiKey.value = state.api.key || "";
+      el.apiModel.value = state.api.model || "gpt-4.1-mini";
+    }
+
+    function editMessage(id) {
+      const s = getCurrentScenario(); if (!s) return;
+      const i = s.messages.findIndex(m => m.id === id);
+      if (i < 0) return;
+      const msg = s.messages[i];
+      const next = prompt("Edit text", msg.text || "");
+      if (next == null) return;
+      saveMajorVersion("before_edit");
+      msg.text = next;
+      msg.ts = Date.now();
+      saveState(); renderAll();
+    }
+
+    function deleteMessage(id) {
+      const s = getCurrentScenario(); if (!s) return;
+      saveMajorVersion("before_delete");
+      s.messages = s.messages.filter(m => m.id !== id);
+      saveState(); renderAll();
+    }
+
+    function timeTravelToMessage(id) {
+      const s = getCurrentScenario(); if (!s) return;
+      const idx = s.messages.findIndex(m => m.id === id);
+      if (idx < 0) return;
+      const proceed = confirm("Save a major version, then truncate conversation after this turn?");
+      if (!proceed) return;
+      saveMajorVersion("time_travel");
+      s.messages = s.messages.slice(0, idx + 1);
+      saveState(); renderAll();
+    }
+
+    function saveMajorVersion(reason) {
+      saveState();
+    }
+
+    function undoToLastVersion() {}
+
+    function handleComposerSubmit() {
+      const mode = state.selected.designMode || "wizard";
+      if (mode === "wizard" && interviewState) {
+        if (interviewState.step < interviewFlow.length) {
+          const step = interviewFlow[interviewState.step];
+          if (step.type === "text") {
+            stepForwardInterview();
+            return;
+          }
+          return;
+        }
+        finalizeAgentInterview();
+        return;
+      }
+      handleSend();
+    }
+
+    async function handleSend() {
+      const s = getCurrentScenario();
+      if (!s) return;
+      const text = el.messageInput.value.trim();
+      const imageData = el.imageUrlInput?.value?.trim() || "";
+      const isManual = state.selected.designMode === "manual_backsolve";
+      if (!text && !imageData) return;
+
+      let role;
+      if (isManual && el.speakerSelect) {
+        role = el.speakerSelect.value || "user";
+      } else {
+        const lastMsg = s.messages[s.messages.length - 1];
+        role = lastMsg?.role === "user" ? "assistant" : "user";
+        el.speakerSelect.value = role;
+      }
+      const selectedSituation = resolveSituation("auto", text, s);
+      const agentId = role === "assistant" ? (el.assistantAgentSelect?.value || state.selected.agentId) : null;
+
+      s.messages.push({ id: uid(), role, text: text || "", image: imageData || "", agentId, ts: Date.now(), situation: role === "assistant" ? selectedSituation : undefined });
+      el.messageInput.value = "";
+      if (el.imageUrlInput) el.imageUrlInput.value = "";
+      el.composerAttach?.classList.remove("visible");
+      saveState();
+      renderAll();
+
+      if (s.mode === "api" && role === "user") {
+        await generateApiAssistantResponse();
+      }
+    }
+
+    function simulateAgentResponse() {
+      const s = getCurrentScenario(); if (!s) return;
+      const a = getCurrentAgent();
+      const situation = resolveSituation(el.situationSelect.value, "", s);
+      const prompt = `Respond as ${a?.name || "assistant"} with tone ${toneForSituation(a, situation)}. Situation: ${situation}.`;
+      s.messages.push({ id: uid(), role: "assistant", text: `[SIMULATED] ${prompt}`, image: "", agentId: a?.id || null, ts: Date.now(), situation });
+      saveState(); renderAll();
+    }
+
+    async function generateApiAssistantResponse() {
+      const s = getCurrentScenario();
+      const a = getCurrentAgent();
+      if (!s || !state.api.endpoint || !state.api.key) {
+        alert("Set API endpoint and API key first.");
+        return;
+      }
+      const latestUser = [...s.messages].reverse().find(m => m.role === "user");
+      const situation = resolveSituation(el.situationSelect.value, latestUser?.text || "", s);
+      const sys = buildSystemPrompt(a, situation);
+      const apiMessages = [
+        { role: "system", content: sys },
+        ...s.messages.map(m => ({ role: m.role, content: m.text || "[Image attached]" }))
+      ];
+      try {
+        const res = await fetch(state.api.endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${state.api.key}`
+          },
+          body: JSON.stringify({ model: state.api.model || "gpt-4.1-mini", messages: apiMessages })
+        });
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || "";
+        s.messages.push({ id: uid(), role: "assistant", text, image: "", agentId: a?.id || null, ts: Date.now(), situation });
+        saveState(); renderAll();
+      } catch (err) {
+        alert("API call failed: " + err.message);
+      }
+    }
+
+    function buildSystemPrompt(agent, situation) {
+      if (!agent) return "You are a helpful assistant.";
+      return [
+        `You are ${agent.name}.`,
+        `Job: ${agent.purpose || "Help users complete tasks accurately."}.`,
+        `Identity traits: ${agent.identity || "helpful, clear, reliable"}.`,
+        `Register: ${agent.register || "Trusted Advisor"}.`,
+        `Voice: ${agent.voice || "clear and concise"}.`,
+        `Situation: ${situation || "normal"}.`,
+        `Tone: ${toneForSituation(agent, situation || "normal")} (baseline: ${agent.tone || "matter-of-fact"}).`,
+        `Style: ${agent.style || "clear sections with concise bullets as needed"}.`,
+        `Interaction model: ${agent.interactionModel || "Collaborative"}.`,
+        `Guardrails: ${agent.guardrails || "none"}.`,
+        `Banned phrases: ${agent.bannedPhrases || "none"}.`
+      ].join("\n");
+    }
+
+    function toneForSituation(agent, situation) {
+      if (!agent) return "neutral";
+      const by = agent.toneBySituation || agent.voiceBySituation || {};
+      return by[situation] || by.normal || agent.tone || "neutral";
+    }
+
+    function resolveSituation(selected, text, scenario) {
+      if (selected && selected !== "auto") return selected;
+      const sourceText = (text || "").toLowerCase();
+      if (detectEscalation(sourceText)) return "escalation";
+      if (detectProductInfo(sourceText)) return "product_info";
+      const lastUser = [...(scenario?.messages || [])].reverse().find(m => m.role === "user");
+      const prior = (lastUser?.text || "").toLowerCase();
+      if (detectEscalation(prior)) return "escalation";
+      if (detectProductInfo(prior)) return "product_info";
+      return "normal";
+    }
+
+    function detectEscalation(text) {
+      return /angry|upset|frustrat|manager|supervisor|escalat|complaint|not working|unacceptable/.test(text);
+    }
+
+    function detectProductInfo(text) {
+      return /feature|pricing|plan|integration|how does|what does|capability|api|product/.test(text);
+    }
+
+    function inferPersonaFromConversation() {
+      const s = getCurrentScenario();
+      const a = getCurrentAgent();
+      if (!s || !a) return;
+      const assistantTexts = s.messages.filter(m => m.role === "assistant").map(m => m.text || "").join(" ").toLowerCase();
+      if (!assistantTexts) return;
+
+      const tone = assistantTexts.includes("!") ? "Encouraging" : assistantTexts.includes("please") ? "Polite and consultative" : "Matter-of-fact";
+      a.tone = tone;
+      a.voice = /step|exact|understood|done/.test(assistantTexts) ? "Terse and direct" : "Conversational and clear";
+      a.style = /\\n|\\-|\\d\\./.test(assistantTexts) ? "Structured bullets and steps" : "Short paragraph then recommendation";
+      a.interactionModel = /recommend|next step|i suggest/.test(assistantTexts) ? "Proactive" : "Collaborative";
+      if (!a.identity) a.identity = "helpful, clear, reliable";
+      saveState(); renderAll();
+    }
+
+    function generateConversationFromIntent() {
+      const s = getCurrentScenario();
+      if (!s) return;
+      const intent = (el.manualIntentInput.value || "").trim();
+      if (!intent) {
+        alert("Add a manual prompt first.");
+        return;
+      }
+      let a = getCurrentAgent();
+      if (!a) {
+        const id = uid();
+        a = { id, projectId: state.selected.projectId, name: "Design from scratch Agent", purpose: "", identity: "", register: "Trusted Advisor", voice: "Clear and concise", tone: "Matter-of-fact", style: "", interactionModel: "Collaborative", guardrails: "", bannedPhrases: "", toneBySituation: { normal: "Trusted Advisor", product_info: "Executive Brief", escalation: "Warm Coach" } };
+        state.agents.push(a);
+        state.selected.agentId = id;
+        s.agentId = id;
+      }
+
+      saveMajorVersion("before_manual_backsolve");
+      const situation = resolveSituation("auto", intent, s);
+      const opening = intent.toLowerCase().includes("call")
+        ? "Customer: Hi, I need help and I want to resolve this on this call."
+        : `User intent: ${intent}`;
+      s.messages = [
+        { id: uid(), role: "user", text: opening, image: "", agentId: null, ts: Date.now() - 120000 },
+        { id: uid(), role: "assistant", text: buildVoiceExample(toneForSituation(a, situation), `I can help with: ${intent}.`, intent, situation), image: "", agentId: a.id, ts: Date.now() - 90000, situation },
+        { id: uid(), role: "user", text: "Please show me the options and your recommendation.", image: "", agentId: null, ts: Date.now() - 60000 },
+        { id: uid(), role: "assistant", text: buildVoiceExample(toneForSituation(a, "product_info"), "Top option first, then alternatives with tradeoffs.", intent, "product_info"), image: "", agentId: a.id, ts: Date.now() - 30000, situation: "product_info" }
+      ];
+      backsolvePersonaFromConversation(intent);
+      saveState();
+      renderAll();
+    }
+
+    function backsolvePersonaFromConversation(forcedPurpose) {
+      const s = getCurrentScenario();
+      const a = getCurrentAgent();
+      if (!s || !a) return;
+      const userText = s.messages.filter(m => m.role === "user").map(m => m.text || "").join(" ").toLowerCase();
+      const assistantText = s.messages.filter(m => m.role === "assistant").map(m => m.text || "").join(" ").toLowerCase();
+
+      a.purpose = (forcedPurpose || a.purpose || userText.slice(0, 140)).trim();
+      a.identity = /urgent|asap|now|fix/.test(userText) ? "direct, resourceful, no-nonsense" : "patient, curious, supportive";
+      a.register = /please|would you|could you/.test(userText) ? "Trusted Advisor" : "Peer";
+      a.voice = /step|exact|done|issue acknowledged/.test(assistantText) ? "Terse and operational" : "Conversational and explanatory";
+      a.tone = /recommend|based on|prioritize/.test(assistantText) ? "Trusted Advisor" :
+        /step|exact|understood/.test(assistantText) ? "Direct Operator" :
+        /together|happy to help|i hear/.test(assistantText) ? "Warm Coach" : "Executive Brief";
+      a.style = /bullet|step|summary/.test(assistantText) ? "Summary first, then bullet actions." : "Short explanation then clear next step.";
+      a.interactionModel = /i recommend|next step|let's/.test(assistantText) ? "Proactive" : "Reactive";
+      if (!a.toneBySituation) a.toneBySituation = { normal: a.tone, product_info: "Executive Brief", escalation: "Warm Coach" };
+      a.toneBySituation.normal = a.toneBySituation.normal || a.tone;
+      a.toneBySituation.product_info = a.toneBySituation.product_info || "Executive Brief";
+      a.toneBySituation.escalation = a.toneBySituation.escalation || "Warm Coach";
+      saveState();
+      renderAll();
+    }
+
+    function calculateScore(scenario) {
+      const agent = getCurrentAgent();
+      const assistantMsgs = scenario.messages.filter(m => m.role === "assistant");
+      const userMsgs = scenario.messages.filter(m => m.role === "user");
+      const text = assistantMsgs.map(m => m.text || "").join(" ").toLowerCase();
+      const banned = (agent?.bannedPhrases || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+      const violations = banned.filter(w => text.includes(w)).length;
+      const guardrailCompliance = Math.max(0, 100 - violations * 30);
+
+      const toneWords = (agent?.tone || "").toLowerCase().split(/\W+/).filter(Boolean);
+      const toneMatches = toneWords.filter(w => text.includes(w)).length;
+      const toneMatch = Math.min(100, 40 + toneMatches * 15);
+
+      const imageTurns = scenario.messages.filter(m => m.image).length;
+      const imageUtilization = scenario.messages.length ? Math.min(100, Math.round((imageTurns / scenario.messages.length) * 200)) : 0;
+
+      const respondedTurns = Math.min(assistantMsgs.length, userMsgs.length);
+      const taskCompletion = userMsgs.length ? Math.round((respondedTurns / userMsgs.length) * 100) : 0;
+
+      return { toneMatch, guardrailCompliance, taskCompletion, imageUtilization };
+    }
+
+    function exportSalesforceConfig() {
+      const s = getCurrentScenario();
+      const agentId = s?.agentId || state.selected.agentId;
+      const agents = agentId ? [state.agents.find(a => a.id === agentId)].filter(Boolean) : [];
+      const payload = {
+        promptBuilder: {
+          templateName: `${s?.name || "Scenario"} Prompt`,
+          systemContext: agents.map(a => buildSystemPrompt(a, "normal")).join("\n---\n"),
+          sampleConversation: (s?.messages || []).map(m => ({ role: m.role, text: m.text, image: !!m.image }))
+        },
+        agentforce: {
+          agentDefinitions: agents.map(a => ({
+            name: a.name,
+            persona: {
+              purpose: a.purpose || "",
+              tone: a.tone,
+              identity: a.identity || "",
+              register: a.register || "Trusted Advisor",
+              voice: a.voice || "",
+              toneBySituation: a.toneBySituation || a.voiceBySituation || { normal: a.tone, product_info: a.tone, escalation: "Warm Coach" },
+              style: a.style || "",
+              interactionModel: a.interactionModel || "Collaborative",
+              guardrails: a.guardrails,
+              bannedPhrases: a.bannedPhrases
+            }
+          })),
+          scenarioName: s?.name
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${(s?.name || "scenario").replace(/\s+/g, "_").toLowerCase()}_salesforce_export.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function generateTestCases() {
+      const s = getCurrentScenario();
+      if (!s) return;
+      const userTurns = s.messages.filter(m => m.role === "user");
+      const cases = userTurns.map((m, i) => ({
+        id: `TC-${i + 1}`,
+        intent: m.text.slice(0, 80) || "Image-led request",
+        expected: "Assistant should respond in configured tone and follow guardrails.",
+        metric: "Tone >= 70, Guardrail >= 90"
+      }));
+      el.testCasePanel.innerHTML = cases.length
+        ? cases.map(c => `<div style="margin:8px 0;"><b>${c.id}</b><div>${escapeHtml(c.intent)}</div><div class="subtle">${escapeHtml(c.expected)} | ${escapeHtml(c.metric)}</div></div>`).join("")
+        : "No user turns found for generating tests.";
+    }
+
+    function populateCompareSelectors() {
+      const scenarios = getProjectScenarios(state.selected.projectId);
+      [el.compareLeft, el.compareRight].forEach(sel => {
+        sel.innerHTML = "";
+        scenarios.forEach(s => {
+          const opt = document.createElement("option");
+          opt.value = s.id;
+          opt.textContent = s.name;
+          sel.appendChild(opt);
+        });
+      });
+      if (state.selected.scenarioId) {
+        el.compareLeft.value = state.selected.scenarioId;
+        if (scenarios[1]) el.compareRight.value = scenarios[1].id;
+      }
+    }
+
+    function renderComparison() {
+      const left = state.scenarios.find(s => s.id === el.compareLeft.value);
+      const right = state.scenarios.find(s => s.id === el.compareRight.value);
+      el.comparePaneLeft.innerHTML = renderComparePaneHtml(left);
+      el.comparePaneRight.innerHTML = renderComparePaneHtml(right);
+    }
+
+    function renderComparePaneHtml(s) {
+      if (!s) return "<p>No scenario selected.</p>";
+      return `
+        <h3>${escapeHtml(s.name)}</h3>
+        <p class="subtle">${s.messages.length} messages | ${s.versions.length} versions</p>
+        ${(s.messages || []).map(m => `
+          <div class="msg ${m.role}" style="max-width:100%;margin:8px 0;">
+            <div class="meta"><span>${m.role}</span><span>${new Date(m.ts).toLocaleString()}</span></div>
+            <div>${escapeHtml(m.text || "")}</div>
+            ${m.image ? `<div class="subtle">[image]</div>` : ""}
+          </div>
+        `).join("")}
+      `;
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttr(str) {
+      return escapeHtml(str).replace(/`/g, "&#096;");
+    }
+  </script>
+</body>
+</html>

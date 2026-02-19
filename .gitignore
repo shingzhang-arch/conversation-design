@@ -1,0 +1,12 @@
+# Editor and IDE
+.cursor/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dependencies (if added later)
+node_modules/
