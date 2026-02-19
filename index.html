@@ -1919,7 +1919,7 @@
       { label: "Collaborative", note: "Alternates proposal and confirmation.", example: "I suggest we do X. Does that work for you?" }
     ];
     const interviewFlow = [
-      { id: "purpose", prompt: "What does your agent do? Describe it in one clear sentence—this helps tailor the examples you'll see.", type: "text", placeholder: "or describe your agent persona in your own words", nudges: ["Helps employees with CRM updates and record management.", "Meeting summaries and updates.", "Case creation and updates.", "Policy and knowledge lookups.", "Case deflection and self-service.", "Pipeline management across channels.", "Order status, returns, and product recommendations."] },
+      { id: "purpose", prompt: "What does your agent do? Describe it in one clear sentence—this helps tailor the examples you'll see.", type: "text", placeholder: "or describe your agent persona in your own words", nudges: ["Helps employees with CRM updates and record management", "Meeting summaries and updates", "Case creation and updates", "Policy and knowledge lookups", "Case deflection and self-service", "Pipeline management across channels", "Order status, returns, and product recommendations"] },
       { id: "identity", prompt: "What 3–5 traits should define this agent's personality? For example: direct and resourceful, or patient and curious.", type: "text", placeholder: "Example: direct, resourceful, no-nonsense", nudges: ["direct, resourceful, no-nonsense", "patient, curious, supportive", "calm, strategic, pragmatic", "precise, deferential, compliant"] },
       { id: "register", prompt: "How should the agent relate to the user? As a peer, trusted advisor, subordinate, or coach?", type: "options", options: registerOptions },
       {
@@ -2400,7 +2400,7 @@
         const focusBtn = document.createElement("button");
         focusBtn.type = "button";
         focusBtn.className = "question-nudge-chip";
-        focusBtn.textContent = "Or type your own below";
+        focusBtn.textContent = "Enter your own below";
         focusBtn.onclick = () => el.messageInput.focus();
         nudgeRow.appendChild(focusBtn);
       }
@@ -2940,13 +2940,13 @@
     }
 
     const AGENT_USE_CASE_BUBBLES = [
-      { label: "Help employees with CRM updates", purpose: "Helps employees with CRM updates and record management." },
-      { label: "Meeting updates", purpose: "Meeting summaries and updates." },
-      { label: "Case creation", purpose: "Case creation and updates." },
-      { label: "Policy or knowledge lookups", purpose: "Policy and knowledge lookups." },
-      { label: "Case deflection", purpose: "Case deflection and self-service." },
-      { label: "Pipeline management", purpose: "Pipeline management across channels." },
-      { label: "Orders, returns, product recommendations", purpose: "Order status, returns, and product recommendations." }
+      { label: "Help employees with CRM updates", purpose: "Helps employees with CRM updates and record management" },
+      { label: "Meeting updates", purpose: "Meeting summaries and updates" },
+      { label: "Case creation", purpose: "Case creation and updates" },
+      { label: "Policy or knowledge lookups", purpose: "Policy and knowledge lookups" },
+      { label: "Case deflection", purpose: "Case deflection and self-service" },
+      { label: "Pipeline management", purpose: "Pipeline management across channels" },
+      { label: "Orders, returns, product recommendations", purpose: "Order status, returns, and product recommendations" }
     ];
 
     const PERSONA_DIMENSIONS = [
@@ -3044,7 +3044,7 @@
       let useCaseHtml = "";
       if (showUseCaseSection) {
         const bubblesHtml = AGENT_USE_CASE_BUBBLES.map(b => `<button type="button" class="agent-use-case-bubble" data-purpose="${escapeAttr(b.purpose)}">${escapeHtml(b.label)}</button>`).join("");
-        useCaseHtml = `<div class="agent-use-case-section"><div class="agent-use-case-header">What does your agent do?</div><div class="agent-use-case-bubbles">${bubblesHtml}<input type="text" class="agent-use-case-input-bubble" placeholder="Or type your own below" data-agent-use-case-custom /></div></div>`;
+        useCaseHtml = `<div class="agent-use-case-section"><div class="agent-use-case-header">What does your agent do?</div><div class="agent-use-case-bubbles">${bubblesHtml}<input type="text" class="agent-use-case-input-bubble" placeholder="Enter your own below" data-agent-use-case-custom /></div></div>`;
       }
       const gridHtml = `
         <div class="persona-nudge-grid persona-nudge-grid-row1">${row1.map(renderPill).join("")}</div>
