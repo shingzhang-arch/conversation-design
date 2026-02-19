@@ -1233,6 +1233,11 @@
       background: #eef4ff;
       color: #0176d3;
     }
+    .question-nudge-chip.active {
+      background: #eef4ff;
+      border-color: #0176d3;
+      color: #0176d3;
+    }
     .agent-use-case-section {
       margin-bottom: 0.75rem;
     }
@@ -1283,9 +1288,9 @@
       color: #0176d3;
     }
     .agent-use-case-bubble.selected {
-      background: #eef4ff;
+      background: #0176d3;
       border-color: #0176d3;
-      color: #0176d3;
+      color: #fff;
     }
     .agent-use-case-continue {
       margin-top: 0.5rem;
@@ -1582,7 +1587,7 @@
           <div class="mode-toggle-wrap">
             <div class="mode-toggle" id="designModeToggle">
               <button id="designModeWizardBtn" class="mode-btn active" type="button">Build Persona</button>
-              <button id="designModeBacksolveBtn" class="mode-btn" type="button">Design from scratch</button>
+              <button id="designModeBacksolveBtn" class="mode-btn" type="button">Design From Scratch</button>
             </div>
           </div>
         </div>
@@ -1615,29 +1620,33 @@
       </section>
 
       <footer class="chat-input-bar" id="composerEl">
-        <div class="sticky-prompt-bar" style="margin-bottom:0;">
-          <div class="input-bar-nudge-header" style="margin-bottom:0.5rem; font-size:0.75rem;">Persona dimensions — select traits to shape your agent</div>
-          <div id="personaNudgesComposer" class="persona-nudges-container" data-persona-nudges="true">
-            <div class="persona-nudge-grid persona-nudge-grid-row1">
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Identity</span><select class="persona-dim-select" data-dim="identity"><option>direct, resourceful, no-nonsense</option><option>patient, curious, supportive</option></select></label>
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Register</span><select class="persona-dim-select" data-dim="register"><option>Peer</option><option selected>Trusted Advisor</option></select></label>
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Voice</span><select class="persona-dim-select" data-dim="voice"><option>Terse</option><option>Conversational</option></select></label>
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Interaction</span><select class="persona-dim-select" data-dim="interaction"><option>Proactive</option><option>Reactive</option><option selected>Collaborative</option></select></label>
+        <div id="composerBarBuildPersona">
+          <div class="sticky-prompt-bar" style="margin-bottom:0;">
+            <div class="input-bar-nudge-header" style="margin-bottom:0.5rem; font-size:0.75rem;">Persona dimensions — select traits to shape your agent</div>
+            <div id="personaNudgesComposer" class="persona-nudges-container" data-persona-nudges="true">
+              <div class="persona-nudge-grid persona-nudge-grid-row1">
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Identity</span><select class="persona-dim-select" data-dim="identity"><option>direct, resourceful, no-nonsense</option><option>patient, curious, supportive</option></select></label>
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Register</span><select class="persona-dim-select" data-dim="register"><option>Peer</option><option selected>Trusted Advisor</option></select></label>
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Voice</span><select class="persona-dim-select" data-dim="voice"><option>Terse</option><option>Conversational</option></select></label>
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Interaction</span><select class="persona-dim-select" data-dim="interaction"><option>Proactive</option><option>Reactive</option><option selected>Collaborative</option></select></label>
+              </div>
+              <div class="persona-nudge-grid persona-nudge-grid-row2">
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Tone</span><select class="persona-dim-select" data-dim="tone"><option>Matter-of-fact</option><option>Encouraging</option></select></label>
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Style</span><select class="persona-dim-select" data-dim="style"><option>Compact</option><option>Narrative</option></select></label>
+                <label class="persona-dim-select-wrap"><span class="persona-dim-label">Guardrails</span><select class="persona-dim-select" data-dim="guardrails"><option>Human-in-the-loop</option><option>Be factual</option></select></label>
+              </div>
             </div>
-            <div class="persona-nudge-grid persona-nudge-grid-row2">
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Tone</span><select class="persona-dim-select" data-dim="tone"><option>Matter-of-fact</option><option>Encouraging</option></select></label>
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Style</span><select class="persona-dim-select" data-dim="style"><option>Compact</option><option>Narrative</option></select></label>
-              <label class="persona-dim-select-wrap"><span class="persona-dim-label">Guardrails</span><select class="persona-dim-select" data-dim="guardrails"><option>Human-in-the-loop</option><option>Be factual</option></select></label>
+          </div>
+          <div id="composerInputRow" class="chat-input-row">
+            <div id="speakerSelectorWrap" class="speaker-selector-wrap" style="display:none;">
+              <button type="button" class="speaker-pill" data-role="user">User</button>
+              <button type="button" class="speaker-pill" data-role="assistant">Agent</button>
             </div>
+            <input type="text" id="messageInput" class="chat-input-field" placeholder="Type your message..." />
+            <button id="sendBtn" class="chat-send-btn" title="Send">&#9650;</button>
           </div>
         </div>
-        <div id="composerInputRow" class="chat-input-row">
-          <div id="speakerSelectorWrap" class="speaker-selector-wrap" style="display:none;">
-            <button type="button" class="speaker-pill" data-role="user">User</button>
-            <button type="button" class="speaker-pill" data-role="assistant">Agent</button>
-          </div>
-          <input type="text" id="messageInput" class="chat-input-field" placeholder="Type your message..." />
-          <button id="sendBtn" class="chat-send-btn" title="Send">&#9650;</button>
+        <div id="composerBarDesignFromScratch" style="display:none;">
         </div>
       </footer>
       <div style="display:none;">
@@ -1692,7 +1701,7 @@
 
       <div id="manualBacksolvePanel" class="collapsible" data-collapsible-default="expanded" style="display:none;">
         <div class="collapsible-header" data-toggle="backsolveCollapsible">
-          <h2>Design from scratch</h2>
+          <h2>Design From Scratch</h2>
           <span class="collapsible-toggle">&#9660;</span>
         </div>
         <div class="collapsible-body">
@@ -1837,6 +1846,8 @@
       fileInput: document.getElementById("fileInput"),
       imageUrlInput: document.getElementById("imageUrlInput"),
       composerEl: document.getElementById("composerEl"),
+      composerBarBuildPersona: document.getElementById("composerBarBuildPersona"),
+      composerBarDesignFromScratch: document.getElementById("composerBarDesignFromScratch"),
       attachImageBtn: document.getElementById("attachImageBtn"),
       composerAttach: document.getElementById("composerAttach"),
       modeSelect: document.getElementById("modeSelect"),
@@ -2247,6 +2258,7 @@
     function openAgentInterview() {
       interviewState.step = 0;
       interviewState.answers = {};
+      interviewState.selectedPurposes = [];
       interviewState.transcript = [];
       interviewState.previewSentence = "";
       interviewState.previewSituation = "normal";
@@ -2257,6 +2269,10 @@
     function stepBackInterview() {
       if (interviewState.step <= 0) return;
       interviewState.step -= 1;
+      if (interviewState.step === 0 && interviewState.answers.purpose) {
+        const purposes = (interviewState.answers.purpose || "").split(",").map(s => s.trim());
+        interviewState.selectedPurposes = purposes.filter(p => AGENT_USE_CASE_BUBBLES.some(b => b.purpose === p));
+      }
       renderInterview();
       renderPersonaDropdownNudges();
     }
@@ -2313,10 +2329,17 @@
       el.interviewNext.style.display = done ? "none" : "inline-block";
       el.agentInterviewChat.scrollTop = el.agentInterviewChat.scrollHeight;
       renderSampleConversation();
+      if (interviewState.step < interviewFlow.length && interviewFlow[interviewState.step]?.id === "purpose") {
+        renderPersonaDropdownNudges();
+      }
     }
 
     function renderInterviewInput(step) {
       el.interviewOptions.innerHTML = "";
+      if (step.id === "purpose" && interviewState.answers.purpose) {
+        const purposes = (interviewState.answers.purpose || "").split(",").map(s => s.trim()).filter(Boolean);
+        interviewState.selectedPurposes = purposes.filter(p => AGENT_USE_CASE_BUBBLES.some(b => b.purpose === p));
+      }
       const showInput = step.type === "text";
       if (el.composerInputRow) el.composerInputRow.style.display = showInput ? "flex" : "none";
       el.messageInput.placeholder = step.placeholder || "Type your answer...";
@@ -2384,15 +2407,34 @@
       card.appendChild(textDiv);
       const nudgeRow = document.createElement("div");
       nudgeRow.className = "question-nudges-in-chat";
+      const selectedPurposes = interviewState.selectedPurposes || [];
       nudges.forEach(nudgeText => {
         const btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "question-nudge-chip";
+        btn.className = "question-nudge-chip" + (stepId === "purpose" && selectedPurposes.includes(nudgeText) ? " active" : "");
         btn.textContent = nudgeText;
         btn.title = nudgeText;
         btn.onclick = () => {
-          el.messageInput.value = nudgeText;
-          el.messageInput.focus();
+          if (stepId === "purpose") {
+            const sel = interviewState.selectedPurposes || [];
+            const idx = sel.indexOf(nudgeText);
+            if (idx >= 0) {
+              sel.splice(idx, 1);
+            } else {
+              sel.push(nudgeText);
+            }
+            interviewState.selectedPurposes = sel;
+            const combined = sel.join(", ");
+            interviewState.answers.purpose = combined;
+            if (el.messageInput) {
+              el.messageInput.value = combined;
+              el.messageInput.focus();
+            }
+            renderInterview();
+          } else {
+            el.messageInput.value = nudgeText;
+            el.messageInput.focus();
+          }
         };
         nudgeRow.appendChild(btn);
       });
@@ -2758,6 +2800,15 @@
         if (mode === "wizard" && !el.agentInterviewChat.children.length) openAgentInterview();
       }
       if (el.composerEl) el.composerEl.style.display = "flex";
+      if (el.composerBarBuildPersona && el.composerBarDesignFromScratch && el.composerInputRow) {
+        const targetBar = mode === "manual_backsolve" ? el.composerBarDesignFromScratch : el.composerBarBuildPersona;
+        if (el.composerInputRow.parentElement !== targetBar) {
+          el.composerInputRow.remove();
+          targetBar.appendChild(el.composerInputRow);
+        }
+        el.composerBarBuildPersona.style.display = mode === "wizard" ? "block" : "none";
+        el.composerBarDesignFromScratch.style.display = mode === "manual_backsolve" ? "block" : "none";
+      }
       el.manualBacksolvePanel.style.display = mode === "manual_backsolve" ? "block" : "none";
       if (el.personaMatrixSection) el.personaMatrixSection.style.display = mode === "wizard" ? "block" : "none";
       if (el.composerInputRow) {
@@ -3043,7 +3094,11 @@
       const showUseCaseSection = state.selected.designMode === "wizard" && interviewState && interviewState.step === 0;
       let useCaseHtml = "";
       if (showUseCaseSection) {
-        const bubblesHtml = AGENT_USE_CASE_BUBBLES.map(b => `<button type="button" class="agent-use-case-bubble" data-purpose="${escapeAttr(b.purpose)}">${escapeHtml(b.label)}</button>`).join("");
+        const selectedPurposes = interviewState.selectedPurposes || [];
+        const bubblesHtml = AGENT_USE_CASE_BUBBLES.map(b => {
+          const sel = selectedPurposes.includes(b.purpose) ? " selected" : "";
+          return `<button type="button" class="agent-use-case-bubble${sel}" data-purpose="${escapeAttr(b.purpose)}">${escapeHtml(b.label)}</button>`;
+        }).join("");
         useCaseHtml = `<div class="agent-use-case-section"><div class="agent-use-case-header">What does your agent do?</div><div class="agent-use-case-bubbles">${bubblesHtml}<input type="text" class="agent-use-case-input-bubble" placeholder="Enter your own below" data-agent-use-case-custom /></div></div>`;
       }
       const gridHtml = `
@@ -3057,11 +3112,18 @@
           const purpose = btn.dataset.purpose;
           if (purpose) {
             btn.onclick = () => {
-              interviewState.answers.purpose = purpose;
-              interviewState.step = 1;
-              if (el.messageInput) el.messageInput.value = "";
+              const sel = interviewState.selectedPurposes || [];
+              const idx = sel.indexOf(purpose);
+              if (idx >= 0) {
+                sel.splice(idx, 1);
+              } else {
+                sel.push(purpose);
+              }
+              interviewState.selectedPurposes = sel;
+              const combined = sel.join(", ");
+              interviewState.answers.purpose = combined;
+              if (el.messageInput) el.messageInput.value = combined;
               renderInterview();
-              renderPersonaDropdownNudges();
             };
           }
         });
@@ -3070,11 +3132,15 @@
           customInput.onkeydown = (e) => {
             if (e.key === "Enter" && customInput.value.trim()) {
               e.preventDefault();
-              interviewState.answers.purpose = customInput.value.trim();
-              interviewState.step = 1;
+              const customText = customInput.value.trim();
               customInput.value = "";
-              if (el.messageInput) el.messageInput.value = "";
-              renderInterview();
+              const current = el.messageInput ? el.messageInput.value.trim() : "";
+              const combined = current ? current + ", " + customText : customText;
+              interviewState.answers.purpose = combined;
+              if (el.messageInput) {
+                el.messageInput.value = combined;
+                el.messageInput.focus();
+              }
               renderPersonaDropdownNudges();
             }
           };
